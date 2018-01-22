@@ -41,9 +41,10 @@ static mut PROCESSES: [Option<kernel::Process<'static>>; NUM_PROCS] = [None, Non
 /// capsules for this platform.
 struct EkTm4c1294xl {
     console: &'static capsules::console::Console<'static, tm4c129x::uart::UART>,
-    alarm: &'static capsules::alarm::AlarmDriver<'static,
-        VirtualMuxAlarm<'static,
-            tm4c129x::gpt::AlarmTimer>>,
+    alarm: &'static capsules::alarm::AlarmDriver<
+		'static,
+        VirtualMuxAlarm<'static, tm4c129x::gpt::AlarmTimer>,
+	>,
     gpio: &'static capsules::gpio::GPIO<'static, tm4c129x::gpio::GPIOPin>,
     ipc: kernel::ipc::IPC,
     led: &'static capsules::led::LED<'static, tm4c129x::gpio::GPIOPin>,
@@ -228,7 +229,7 @@ pub unsafe fn reset_handler() {
         capsules::console::App::default());
     kernel::debug::assign_console_driver(Some(tm4c1294.console), kc);
 
-    debug!("Initialization complete. Entering main loop ...");
+    //debug!("Initialization complete. Entering main loop ...");
 
     // Uncomment to measure overheads for TakeCell and MapCell:
     // test_take_map_cell::test_take_map_cell();
