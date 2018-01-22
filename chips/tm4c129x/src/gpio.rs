@@ -196,7 +196,7 @@ impl IndexMut<usize> for Port {
 }
 
 impl Port {
-    pub fn handle_interrupt(&self) {use gpio;
+    pub fn handle_interrupt(&self) {
         let port: &Registers = unsafe { &*self.port };
 
         // Interrupt Flag Register (IFR) bits are only valid if the same bits
@@ -205,7 +205,7 @@ impl Port {
 
         // About to handle all the interrupts, so just clear them now to get
         // over with it.
-        port.ris.set(!0); //To Do readonly
+        port.icr.set(0xFF); //To Do readonly
 
         loop {
             let pin = fired.trailing_zeros() as usize;
