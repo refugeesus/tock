@@ -3,9 +3,7 @@
 use cortexm4;
 use gpio;
 use kernel::Chip;
-use kernel::common::{RingBuffer, Queue};
 use helpers::{DeferredCall, Task};
-use nvic;
 use gpt;
 use uart;
 
@@ -32,12 +30,9 @@ impl Chip for Tm4c129x {
     fn service_pending_interrupts(&mut self) {
         use nvic::*;
 		
-		unsafe{
-			loop {
-				if let Some(task) = DeferredCall::next_pending() {
-                   
-				} else if let Some(interrupt) = cortexm4::nvic::next_pending() {
-		            match interrupt {
+		unsafe {
+            while let Some(interrupt) = cortexm4::nvic::next_pending() {
+                match interrupt {
 		                     
 		                    UART7 => uart::UART7.handle_interrupt(),
 		                    TIMER0A => gpt::TIMER0.handle_interrupt(),
@@ -49,15 +44,12 @@ impl Chip for Tm4c129x {
 		                n.clear_pending();
 		                n.enable();
 		                
-		            } else {
-						break;            	
-			        }
-				 }
+		            } 
 		}
     }
     
     fn has_pending_interrupts(&self) -> bool {
-        unsafe { cortexm4::nvic::has_pending() || DeferredCall::has_tasks() }
+        unsafe { cortexm4::nvic::has_pending()}
     }
 
     fn mpu(&self) -> &cortexm4::mpu::MPU {
