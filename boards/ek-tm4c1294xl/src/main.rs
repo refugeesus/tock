@@ -4,10 +4,11 @@
 #![no_std]
 #![no_main]
 #![feature(asm,const_fn,lang_items,compiler_builtins_lib)]
+
 extern crate capsules;
 extern crate compiler_builtins;
 #[allow(unused_imports)]
-#[macro_use(debug,static_init)]
+#[macro_use(debug, debug_gpio,static_init)]
 extern crate kernel;
 extern crate tm4c129x;
 
@@ -19,7 +20,7 @@ use kernel::hil::Controller;
 #[macro_use]
 pub mod io;
 #[allow(dead_code)]
-//mod test_take_map_cell;
+mod test_take_map_cell;
 
 // State for loading and holding applications.
 
@@ -55,9 +56,9 @@ struct EkTm4c1294xl {
 /// Mapping of integer syscalls to objects that implement syscalls.
 impl Platform for EkTm4c1294xl {
     fn with_driver<F, R>(&self, driver_num: usize, f: F) -> R
-        where F: FnOnce(Option<&kernel::Driver>) -> R
+    where
+        F: FnOnce(Option<&kernel::Driver>) -> R,
     {
-
         match driver_num {
             capsules::console::DRIVER_NUM => f(Some(self.console)),
             capsules::alarm::DRIVER_NUM => f(Some(self.alarm)),
@@ -140,7 +141,6 @@ pub unsafe fn reset_handler() {
 
     tm4c129x::init();
 
-
     tm4c129x::sysctl::PSYSCTLM.setup_system_clock(tm4c129x::sysctl::SystemClockSource::PllMoscAt120MHz{
         frequency: tm4c129x::sysctl::OscillatorFrequency::Frequency25MHz,
     });
@@ -149,7 +149,8 @@ pub unsafe fn reset_handler() {
     
     let console = static_init!(
         capsules::console::Console<tm4c129x::uart::UART>,
-        capsules::console::Console::new(&tm4c129x::uart::UART7,
+        capsules::console::Console::new(
+					 &tm4c129x::uart::UART7,
                      115200,
                      &mut capsules::console::WRITE_BUF,
                      kernel::Grant::create()));
@@ -245,7 +246,7 @@ pub unsafe fn reset_handler() {
     kernel::process::load_processes(&_sapps as *const u8,
                                     &mut APP_MEMORY,
                                     &mut PROCESSES,
-                                    FAULT_RESPONSE);
+                                    FAULT_RESPONSE,);
     kernel::main(&tm4c1294, &mut chip, &mut PROCESSES, &tm4c1294.ipc);
 }
 
