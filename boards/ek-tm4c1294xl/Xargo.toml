@@ -1,6 +1,3 @@
-[dependencies.alloc]
-stage = 0
-
 [dependencies.core]
 
 [dependencies.compiler_builtins]
