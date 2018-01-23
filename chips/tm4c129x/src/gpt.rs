@@ -60,7 +60,7 @@ impl AlarmTimer {
     }
 
     fn disable_interrupts(&self) {
-        let regs: &Registers = unsafe { mem::transmute(self.registers) };
+        let regs: &Registers = unsafe { &*self.registers };
         regs.imr.set(regs.imr.get() & !(1 << 4)); // clear CC1IE
     }
 

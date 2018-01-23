@@ -397,7 +397,7 @@ unsafe fn configure_pll(multiplier: u32, hse: bool) {
 */
 
 unsafe fn configure_internal_oscillator_pll() {
-	let regs: &Registers = unsafe { &*self.registers };
+	let regs: &Registers = unsafe { &*PSYSCTLM.registers };
 
     regs.rsclkcfg.set(0x00000000);
 
@@ -412,7 +412,7 @@ unsafe fn configure_internal_oscillator_pll() {
 }
 
 unsafe fn configure_external_oscillator(frequency: OscillatorFrequency) {
-	let regs: &Registers = unsafe { &*self.registers };
+	let regs: &Registers = unsafe { &*PSYSCTLM.registers };
 
 	regs.moscctl.set(0x13); // OSCRNG | MOSCIM | CVAL
 	while regs.ris.get () & (0b1 << 8) != (0b1 << 8) {}
@@ -430,7 +430,7 @@ unsafe fn configure_external_oscillator(frequency: OscillatorFrequency) {
 }
 
 unsafe fn configure_external_oscillator_pll(frequency: OscillatorFrequency) {
-	let regs: &Registers = unsafe { &*self.registers };
+	let regs: &Registers = unsafe { &*PSYSCTLM.registers };
 
 	regs.moscctl.set(0x13); // OSCRNG | MOSCIM | CVAL
     while regs.ris.get () & (0b1 << 8) != (0b1 << 8) {}
@@ -458,7 +458,7 @@ pub fn get_frequency(clock: Clock) -> u32 {
 }*/
 
 pub unsafe fn enable_clock(clock: Clock) {
-	let regs: &Registers = unsafe { &*self.registers };
+	let regs: &Registers = unsafe { &*PSYSCTLM.registers };
 	match clock {
 		Clock::TIMER(c) => regs.rcgctimer.set(regs.rcgctimer.get() | 1 << (c as u32)),
 		Clock::GPIO(c) => regs.rcgcgpio.set(regs.rcgcgpio.get() | 1 << (c as u32)),

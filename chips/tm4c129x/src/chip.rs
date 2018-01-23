@@ -37,7 +37,7 @@ impl Chip for Tm4c129x {
 		                    UART7 => uart::UART7.handle_interrupt(),
 		                    TIMER0A => gpt::TIMER0.handle_interrupt(),
 		                    _ => {
-				                   panic!("unhandled interrupt {}", interrupt); 
+				                   //panic!("unhandled interrupt {}", interrupt); 
 		                    }
 		                }
 			            let n = cortexm4::nvic::Nvic::new(interrupt);
