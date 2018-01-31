@@ -62,15 +62,16 @@ impl AlarmTimer {
 
     fn disable_interrupts(&self) {
         let regs: &mut Registers = unsafe { mem::transmute(self.registers) };
-        regs.imr.set(regs.imr.get() & !(1 << 4)); // clear CC1IE
+		//regs.imr.set(regs.imr.get() & !(1 << 4));
+        regs.tamr.set(regs.tamr.get() & !(1 << 5)); // clear TAMIE
     }
 
     pub fn handle_interrupt(&self) {
         let regs: &mut Registers = unsafe { mem::transmute(self.registers) };
-        // check if caused by CC1IF
+        // check if caused by TAMMIS
         if regs.mis.get() & (1 << 4) != 0 {
             self.disable_interrupts();
-            regs.icr.set(regs.icr.get() | (1 << 4)); // clear CC1IF
+            regs.icr.set(regs.icr.get() | (1 << 4)); // clear TAMCINT
             self.client.get().map(|cb| { cb.fired(); });
         }
     }
@@ -88,8 +89,9 @@ impl hil::Controller for AlarmTimer {
 
         regs.ctl.set(0);
         regs.cfg.set(0x0);
-        regs.tamr.set(regs.tamr.get() | (0x30) | 0x2 );
+        regs.tamr.set(regs.tamr.get() | 0x12 ); // Periodic count-up
         regs.tailr.set(0xFFFFFFFF);
+		regs.imr.set(regs.imr.get() | (1 << 4)); // TAMIM enable
         regs.ctl.set(regs.ctl.get() | (1 << 0)); // TAEN
     }
 }
@@ -103,20 +105,22 @@ impl hil::time::Time for AlarmTimer {
 
     fn is_armed(&self) -> bool {
         let regs: &mut Registers = unsafe { mem::transmute(self.registers) };
-        regs.imr.get() & (1 << 4) != 0 // TAMIM
+        //regs.imr.get() & (1 << 4) != 0 // TAMIM
+		regs.tamr.get() & (1 << 5) != 0 // TAMIE
     }
 }
 
 impl hil::time::Alarm for AlarmTimer {
     fn now(&self) -> u32 {
         let regs: &mut Registers = unsafe { mem::transmute(self.registers) };
-        regs.tav.get()
+        regs.tar.get()
     }
 
     fn set_alarm(&self, tics: u32) {
         let regs: &mut Registers = unsafe { mem::transmute(self.registers) };
-        regs.tamatchr.set(tics & 0xFFFF);             
-        regs.imr.set(regs.imr.get() | (1 << 4)); // CC1IE
+        regs.tamatchr.set(tics * (sysctl::get_system_frequency() / 16000));             
+        //regs.imr.set(regs.imr.get() | (1 << 4)); // CC1IE // TAMIE auch deaktivieren?
+		regs.tamr.set(regs.tamr.get() | (1 << 5)); // GPTM Timer A Match Interrupt		
     }
 
     fn get_alarm(&self) -> u32 {
