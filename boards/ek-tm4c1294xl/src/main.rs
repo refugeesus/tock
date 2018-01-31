@@ -41,9 +41,7 @@ static mut PROCESSES: [Option<kernel::Process<'static>>; NUM_PROCS] = [None, Non
 /// capsules for this platform.
 struct EkTm4c1294xl {
     //console: &'static capsules::console::Console<'static, tm4c129x::uart::UART>,
-    /*alarm: &'static capsules::alarm::AlarmDriver<'static,
-        VirtualMuxAlarm<'static,
-            tm4c129x::gpt::AlarmTimer>>,*/
+    alarm: &'static capsules::alarm::AlarmDriver<'static, VirtualMuxAlarm<'static, tm4c129x::gpt::AlarmTimer>,>,
     gpio: &'static capsules::gpio::GPIO<'static, tm4c129x::gpio::GPIOPin>,
     ipc: kernel::ipc::IPC,
     led: &'static capsules::led::LED<'static, tm4c129x::gpio::GPIOPin>,
@@ -59,7 +57,7 @@ impl Platform for EkTm4c1294xl {
 
         match driver_num {
           //  capsules::console::DRIVER_NUM => f(Some(self.console)),
-            //capsules::alarm::DRIVER_NUM => f(Some(self.alarm)),
+            capsules::alarm::DRIVER_NUM => f(Some(self.alarm)),
             capsules::gpio::DRIVER_NUM => f(Some(self.gpio)),
             kernel::ipc::DRIVER_NUM => f(Some(&self.ipc)),
             capsules::led::DRIVER_NUM => f(Some(self.led)),
@@ -145,8 +143,7 @@ pub unsafe fn reset_handler() {
         frequency: tm4c129x::sysctl::OscillatorFrequency::Frequency25MHz,
     });*/
 
-    
-/*
+   /* 
     let console = static_init!(
         capsules::console::Console<tm4c129x::uart::UART>,
         capsules::console::Console::new(&tm4c129x::uart::UART7,
@@ -155,7 +152,7 @@ pub unsafe fn reset_handler() {
                      kernel::Grant::create()));
     hil::uart::UART::set_client(&tm4c129x::uart::UART7, console);
     tm4c129x::uart::UART7.specify_pins(&tm4c129x::gpio::PC[4], &tm4c129x::gpio::PC[5]);
-
+*/
     // Alarm
     let alarm_timer = &tm4c129x::gpt::TIMER0;
     let mux_alarm = static_init!(
@@ -168,7 +165,7 @@ pub unsafe fn reset_handler() {
     let alarm = static_init!(
         capsules::alarm::AlarmDriver<'static, VirtualMuxAlarm<'static, tm4c129x::gpt::AlarmTimer>>,
         capsules::alarm::AlarmDriver::new(virtual_alarm1, kernel::Grant::create()));
-    virtual_alarm1.set_client(alarm);*/
+    virtual_alarm1.set_client(alarm); 
 
     // LEDs
     let led_pins = static_init!(
@@ -209,7 +206,7 @@ pub unsafe fn reset_handler() {
 
     let tm4c1294 = EkTm4c1294xl {
         //console: console,
-        //alarm: alarm,
+        alarm: alarm,
         gpio: gpio,
         ipc: kernel::ipc::IPC::new(),
         led: led,

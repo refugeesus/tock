@@ -2,7 +2,7 @@ sudo: false
 language: rust
 
 env:
-  - RUSTUP_TOOLCHAIN=nightly-2018-01-05
+  - RUSTUP_TOOLCHAIN=nightly-nightly-2017-09-20
 
 cache:
   cargo: true

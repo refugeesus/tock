@@ -480,7 +480,7 @@ impl GPIOPin {
         }
     }
 
-    fn configure(&self, mode: Mode) {
+    pub fn configure(&self, mode: Mode) {
         unsafe {
             sysctl::enable_clock(sysctl::Clock::GPIO(CLOCKS[self.clock]));
         }

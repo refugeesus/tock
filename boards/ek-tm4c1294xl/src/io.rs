@@ -77,18 +77,9 @@ impl Write for Writer {
         }
 
 
-
-        // turn off the non panic leds, just in case
-        let ledg = &tm4c129x::gpio::PN[1];
-        ledg.enable_output();
-        ledg.set();
-        let ledb = &tm4c129x::gpio::PN[0];
-        ledb.enable_output();
-        ledb.set();
-
         // blink the panic signal
-        let led = &tm4c129x::gpio::PF[4];
-        led.enable_output();
+        let led = &tm4c129x::gpio::PF[0];
+        led.configure(tm4c129x::gpio::Mode::Output(tm4c129x::gpio::OutputMode::Digital));
         loop {
             for _ in 0..1000000 {
                 led.clear();

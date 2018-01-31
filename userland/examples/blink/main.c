@@ -2,6 +2,7 @@
 #include <timer.h>
 
 int main(void) {
+
   // Ask the kernel how many LEDs are on this board.
   int num_leds = led_count();
 
@@ -16,6 +17,11 @@ int main(void) {
       }
     }
 
+    for(int i=0; i < 10000; i++)
+    {
+    	int d = led_count();
+
+    }
     // This delay uses an underlying timer in the kernel.
     //delay_ms(250);
   }

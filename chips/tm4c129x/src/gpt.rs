@@ -5,6 +5,7 @@ use core::mem;
 use kernel::common::VolatileCell;
 use sysctl;
 
+#[repr(C)]
 struct Registers {
     cfg: VolatileCell<u32>,
     tamr: VolatileCell<u32>,
@@ -62,8 +63,9 @@ impl AlarmTimer {
 
     fn disable_interrupts(&self) {
         let regs: &mut Registers = unsafe { mem::transmute(self.registers) };
+		regs.tamr.set(regs.tamr.get() & !(1 << 5)); // clear TAMIE
 		//regs.imr.set(regs.imr.get() & !(1 << 4));
-        regs.tamr.set(regs.tamr.get() & !(1 << 5)); // clear TAMIE
+        
     }
 
     pub fn handle_interrupt(&self) {
@@ -81,18 +83,19 @@ impl hil::Controller for AlarmTimer {
     type Config = &'static hil::time::Client;
 
     fn configure(&self, client: &'static hil::time::Client) {
-        let regs: &mut Registers = unsafe { mem::transmute(self.registers) };
-        self.client.set(Some(client));
         unsafe {
             sysctl::enable_clock(self.clock);
         }
-
-        regs.ctl.set(0);
+        
+        self.client.set(Some(client));
+		let regs: &mut Registers = unsafe { mem::transmute(self.registers) };
+		
+        regs.ctl.set(0x0);
         regs.cfg.set(0x0);
-        regs.tamr.set(regs.tamr.get() | 0x12 ); // Periodic count-up
+        regs.tamr.set(regs.tamr.get() | 0x12 | 0x1000 ); // Periodic count-up
         regs.tailr.set(0xFFFFFFFF);
 		regs.imr.set(regs.imr.get() | (1 << 4)); // TAMIM enable
-        regs.ctl.set(regs.ctl.get() | (1 << 0)); // TAEN
+        regs.ctl.set(regs.ctl.get() | (1 << 0)); // TAEN 
     }
 }
 
@@ -118,9 +121,10 @@ impl hil::time::Alarm for AlarmTimer {
 
     fn set_alarm(&self, tics: u32) {
         let regs: &mut Registers = unsafe { mem::transmute(self.registers) };
-        regs.tamatchr.set(tics * (sysctl::get_system_frequency() / 16000));             
-        //regs.imr.set(regs.imr.get() | (1 << 4)); // CC1IE // TAMIE auch deaktivieren?
-		regs.tamr.set(regs.tamr.get() | (1 << 5)); // GPTM Timer A Match Interrupt		
+        //regs.tamatchr.set(tics * (sysctl::get_system_frequency() / 16000));             
+		regs.tamatchr.set(tics << 12);         
+		regs.tamr.set(regs.tamr.get() | (1 << 5)); // GPTM Timer A Match Interrupt
+		//regs.imr.set(regs.imr.get() | (1 << 4)); // CC1IE // TAMIE auch deaktivieren?		
     }
 
     fn get_alarm(&self) -> u32 {
