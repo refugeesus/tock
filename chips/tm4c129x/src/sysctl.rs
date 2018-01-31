@@ -405,7 +405,7 @@ unsafe fn configure_internal_oscillator_pll() {
     regs.memtim0.set(0x00000180 | 0x01800000 | 0x5 | (0x5 << 16 ));
     regs.rsclkcfg.set(regs.rsclkcfg.get() | (0x40000000));
 
-    while regs.pllstat.get() & (1) != (1) {}
+    while regs.pllstat.get() & (1) == (0) {}
 
     regs.rsclkcfg.set(regs.rsclkcfg.get() | 0x10000000 | 0x80000000 |  0x3);
 }
@@ -414,7 +414,7 @@ unsafe fn configure_external_oscillator(frequency: OscillatorFrequency) {
 	let regs: &mut Registers = mem::transmute(PSYSCTLM.registers);
 
 	regs.moscctl.set(0x13); // OSCRNG | MOSCIM | CVAL
-	while regs.ris.get () & (0b1 << 8) != (0b1 << 8) {}
+	while regs.ris.get () & (1 << 8) == (0) {}
 
 	regs.rsclkcfg.set(regs.rsclkcfg.get() | (0x00300000));
 
@@ -432,7 +432,7 @@ unsafe fn configure_external_oscillator_pll(frequency: OscillatorFrequency) {
 	let regs: &mut Registers = mem::transmute(PSYSCTLM.registers);
 
 	regs.moscctl.set(0x13); // OSCRNG | MOSCIM | CVAL
-    while regs.ris.get () & (0b1 << 8) != (0b1 << 8) {}
+    while regs.ris.get () & (1 << 8) == (0) {}
 
     regs.rsclkcfg.set(regs.rsclkcfg.get() | (0x03300000));
 
@@ -441,7 +441,7 @@ unsafe fn configure_external_oscillator_pll(frequency: OscillatorFrequency) {
     regs.memtim0.set(0x00000180 | 0x01800000 | 0x5 | (0x5 << 16 ));
     regs.rsclkcfg.set(regs.rsclkcfg.get() | (0x40000000));
 
-    while regs.pllstat.get() & (1) != (1) {}
+    while regs.pllstat.get() & (1) == (0) {}
 
     regs.rsclkcfg.set(regs.rsclkcfg.get() | 0x10000000 | 0x80000000 |  0x3);
 	//regs.rsclkcfg.set(regs.rsclkcfg.get() & !(0x00F00000));
