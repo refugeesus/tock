@@ -4,11 +4,10 @@
 #![no_std]
 #![no_main]
 #![feature(asm,const_fn,lang_items,compiler_builtins_lib)]
-
 extern crate capsules;
 extern crate compiler_builtins;
 #[allow(unused_imports)]
-#[macro_use(debug, debug_gpio,static_init)]
+#[macro_use(debug,static_init)]
 extern crate kernel;
 extern crate tm4c129x;
 
@@ -20,7 +19,7 @@ use kernel::hil::Controller;
 #[macro_use]
 pub mod io;
 #[allow(dead_code)]
-mod test_take_map_cell;
+//mod test_take_map_cell;
 
 // State for loading and holding applications.
 
@@ -41,11 +40,10 @@ static mut PROCESSES: [Option<kernel::Process<'static>>; NUM_PROCS] = [None, Non
 /// A structure representing this platform that holds references to all
 /// capsules for this platform.
 struct EkTm4c1294xl {
-    console: &'static capsules::console::Console<'static, tm4c129x::uart::UART>,
-    alarm: &'static capsules::alarm::AlarmDriver<
-		'static,
-        VirtualMuxAlarm<'static, tm4c129x::gpt::AlarmTimer>,
-	>,
+    //console: &'static capsules::console::Console<'static, tm4c129x::uart::UART>,
+    /*alarm: &'static capsules::alarm::AlarmDriver<'static,
+        VirtualMuxAlarm<'static,
+            tm4c129x::gpt::AlarmTimer>>,*/
     gpio: &'static capsules::gpio::GPIO<'static, tm4c129x::gpio::GPIOPin>,
     ipc: kernel::ipc::IPC,
     led: &'static capsules::led::LED<'static, tm4c129x::gpio::GPIOPin>,
@@ -56,12 +54,12 @@ struct EkTm4c1294xl {
 /// Mapping of integer syscalls to objects that implement syscalls.
 impl Platform for EkTm4c1294xl {
     fn with_driver<F, R>(&self, driver_num: usize, f: F) -> R
-    where
-        F: FnOnce(Option<&kernel::Driver>) -> R,
+        where F: FnOnce(Option<&kernel::Driver>) -> R
     {
+
         match driver_num {
-            capsules::console::DRIVER_NUM => f(Some(self.console)),
-            capsules::alarm::DRIVER_NUM => f(Some(self.alarm)),
+          //  capsules::console::DRIVER_NUM => f(Some(self.console)),
+            //capsules::alarm::DRIVER_NUM => f(Some(self.alarm)),
             capsules::gpio::DRIVER_NUM => f(Some(self.gpio)),
             kernel::ipc::DRIVER_NUM => f(Some(&self.ipc)),
             capsules::led::DRIVER_NUM => f(Some(self.led)),
@@ -141,16 +139,17 @@ pub unsafe fn reset_handler() {
 
     tm4c129x::init();
 
+
+/*
     tm4c129x::sysctl::PSYSCTLM.setup_system_clock(tm4c129x::sysctl::SystemClockSource::PllMoscAt120MHz{
         frequency: tm4c129x::sysctl::OscillatorFrequency::Frequency25MHz,
-    });
+    });*/
 
-    let mut chip = tm4c129x::chip::Tm4c129x::new();
     
+/*
     let console = static_init!(
         capsules::console::Console<tm4c129x::uart::UART>,
-        capsules::console::Console::new(
-					 &tm4c129x::uart::UART7,
+        capsules::console::Console::new(&tm4c129x::uart::UART7,
                      115200,
                      &mut capsules::console::WRITE_BUF,
                      kernel::Grant::create()));
@@ -169,7 +168,7 @@ pub unsafe fn reset_handler() {
     let alarm = static_init!(
         capsules::alarm::AlarmDriver<'static, VirtualMuxAlarm<'static, tm4c129x::gpt::AlarmTimer>>,
         capsules::alarm::AlarmDriver::new(virtual_alarm1, kernel::Grant::create()));
-    virtual_alarm1.set_client(alarm);
+    virtual_alarm1.set_client(alarm);*/
 
     // LEDs
     let led_pins = static_init!(
@@ -209,27 +208,31 @@ pub unsafe fn reset_handler() {
     }
 
     let tm4c1294 = EkTm4c1294xl {
-        console: console,
-        alarm: alarm,
+        //console: console,
+        //alarm: alarm,
         gpio: gpio,
         ipc: kernel::ipc::IPC::new(),
         led: led,
         button: button,
 
     };
-	
-	
 
-    tm4c129x::gpio::PN[0].set();
     //tm4c129x::gpio::PN[1].set();
+    //tm4c129x::gpio::PN[0].set();
+    //tm4c129x::gpio::PF[4].set();
+    //tm4c129x::gpio::PF[0].set();
 
-    tm4c1294.console.initialize();
+
+
+    // tm4c1294.console.initialize();
     // Attach the kernel debug interface to this console
-    let kc = static_init!(
+    /*let kc = static_init!(
         capsules::console::App,
         capsules::console::App::default());
-    kernel::debug::assign_console_driver(Some(tm4c1294.console), kc);
-
+    kernel::debug::assign_console_driver(Some(tm4c1294.console), kc);*/
+	
+	let mut chip = tm4c129x::chip::Tm4c129x::new();
+	
     //debug!("Initialization complete. Entering main loop ...");
 
     // Uncomment to measure overheads for TakeCell and MapCell:
@@ -246,7 +249,7 @@ pub unsafe fn reset_handler() {
     kernel::process::load_processes(&_sapps as *const u8,
                                     &mut APP_MEMORY,
                                     &mut PROCESSES,
-                                    FAULT_RESPONSE,);
+                                    FAULT_RESPONSE);
     kernel::main(&tm4c1294, &mut chip, &mut PROCESSES, &tm4c1294.ipc);
 }
 

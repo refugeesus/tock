@@ -81,7 +81,7 @@ impl UART {
     }
 
     fn set_baud_rate(&self, baud_rate: u32) {
-        let regs: &UARTRegisters = unsafe { &*self.registers };
+        let regs: &mut UARTRegisters = unsafe { mem::transmute(self.registers) };
         let clk = 120000000 / baud_rate;
         let divint = clk / 16;
         let divfrac = 7; //ToDo
@@ -95,7 +95,7 @@ impl UART {
     }
 
     fn enable(&self) {
-        let regs: &UARTRegisters = unsafe { &*self.registers };
+        let regs: &mut UARTRegisters = unsafe { mem::transmute(self.registers) };
         unsafe {
             sysctl::enable_clock(self.clock);
         }
@@ -104,17 +104,17 @@ impl UART {
     }
 
     fn enable_tx_interrupts(&self) {
-        let regs: &UARTRegisters = unsafe { &*self.registers };
+        let regs: &mut UARTRegisters = unsafe { mem::transmute(self.registers) };
         regs.im.set(regs.im.get() | (1 << 11)); // TCIE
     }
 
     fn disable_tx_interrupts(&self) {
-        let regs: &UARTRegisters = unsafe { &*self.registers };
+        let regs: &mut UARTRegisters = unsafe { mem::transmute(self.registers) };
         regs.im.set(regs.im.get() & !(1 << 11)); // TCIE
     }
 
     pub fn enable_tx(&self) {
-        let regs: &UARTRegisters = unsafe { &*self.registers };
+        let regs: &mut UARTRegisters = unsafe { mem::transmute(self.registers) };
         self.tx
             .get()
             .unwrap()
@@ -124,20 +124,20 @@ impl UART {
     }
 
     pub fn enable_rx(&self) {
-        let regs: &UARTRegisters = unsafe { &*self.registers };
+        let regs: &mut UARTRegisters = unsafe { mem::transmute(self.registers) };
         self.rx.get().unwrap().configure(gpio::Mode::InputOutput(gpio::InputOutputMode::DigitalAfsel));
         self.enable();
         regs.ctl.set(regs.ctl.get() | (1 << 9)); // RE
     }
 
     pub fn send_byte(&self, byte: u8) {
-        let regs: &UARTRegisters = unsafe { &*self.registers };
+        let regs: &mut UARTRegisters = unsafe { mem::transmute(self.registers) };
         //while regs.fr.get() & (1 << 3) != 0 {} // TXE
         regs.dr.set(byte as u32);
     }
 
     pub fn tx_ready(&self) -> bool {
-        let regs: &UARTRegisters = unsafe { &*self.registers };
+        let regs: &mut UARTRegisters = unsafe { mem::transmute(self.registers) };
         regs.fr.get() & (1 << 3) == 0 // TC
     }
 
@@ -146,7 +146,7 @@ impl UART {
     }
 
     pub fn handle_interrupt(&self) {
-        let regs: &UARTRegisters = unsafe { &*self.registers };
+        let regs: &mut UARTRegisters = unsafe { mem::transmute(self.registers) };
         // check if caused by TC
         if regs.mis.get() & (1 << 11) != 0 {
             self.remaining.set(self.remaining.get() - 1);
@@ -188,4 +188,3 @@ impl hil::uart::UART for UART {
         unimplemented!()
     }
 }
-
