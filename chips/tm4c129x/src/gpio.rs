@@ -594,7 +594,6 @@ impl GPIOPin {
             let port: &mut Registers = mem::transmute(self.port);
             if port.im.get() & (1 << self.pin) == 0 {
                 INTERRUPT_COUNT.fetch_add(1, Ordering::Relaxed);
-				port.ris.set(0x0);
                 port.im.set(port.im.get() | (1 << self.pin));
             }
         }
@@ -691,7 +690,6 @@ impl hil::gpio::Pin for GPIOPin {
     fn clear(&self) {
         GPIOPin::clear(self);
     }
-
 
     fn enable_interrupt(&self, client_data: usize, mode: hil::gpio::InterruptMode) {
         let mode_bits = match mode {
