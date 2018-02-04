@@ -63,7 +63,7 @@ impl AlarmTimer {
 
     fn disable_interrupts(&self) {
         let regs: &mut Registers = unsafe { mem::transmute(self.registers) };
-		regs.tamr.set(regs.tamr.get() & !(1 << 5)); // clear TAMIE
+		regs.tamr.set(regs.tamr.get() | (1 << 12)); // GPTM Timer A Match Interrupt 
 		//regs.imr.set(regs.imr.get() & !(1 << 4));
         
     }
@@ -71,9 +71,9 @@ impl AlarmTimer {
     pub fn handle_interrupt(&self) {
         let regs: &mut Registers = unsafe { mem::transmute(self.registers) };
         // check if caused by TAMMIS
-        if regs.mis.get() & (1 << 4) != 0 {
+        if regs.mis.get() & (1 << 0) != 0 {
             self.disable_interrupts();
-            regs.icr.set(regs.icr.get() | (1 << 4)); // clear TAMCINT
+            regs.icr.set(regs.icr.get() | (1 << 0)); // clear TAMCINT
             self.client.get().map(|cb| { cb.fired(); });
         }
     }
@@ -92,10 +92,8 @@ impl hil::Controller for AlarmTimer {
 		
         regs.ctl.set(0x0);
         regs.cfg.set(0x0);
-        regs.tamr.set(regs.tamr.get() | 0x12 | 0x1000 ); // Periodic count-up
-        regs.tailr.set(0xFFFFFFFF);
-		regs.imr.set(regs.imr.get() | (1 << 4)); // TAMIM enable
-        regs.ctl.set(regs.ctl.get() | (1 << 0)); // TAEN 
+        regs.tamr.set(regs.tamr.get() | 0x11 ); // One-Shot count-up
+        regs.imr.set(regs.imr.get() | (1 << 0)); // TAMIM enable
     }
 }
 
@@ -121,14 +119,15 @@ impl hil::time::Alarm for AlarmTimer {
 
     fn set_alarm(&self, tics: u32) {
         let regs: &mut Registers = unsafe { mem::transmute(self.registers) };
-        //regs.tamatchr.set(tics * (sysctl::get_system_frequency() / 16000));             
-		regs.tamatchr.set(tics << 12);         
-		regs.tamr.set(regs.tamr.get() | (1 << 5)); // GPTM Timer A Match Interrupt
+        //regs.tamatchr.set(tics * (sysctl::get_system_frequency() / 16000));  
+        regs.tailr.set(tics * (sysctl::get_system_frequency() / 16000)); 
+        regs.tamr.set(regs.tamr.get() & !(1 << 12)); // clear TAMIE              
+		regs.ctl.set(regs.ctl.get() | (1 << 0)); // TAEN    
 		//regs.imr.set(regs.imr.get() | (1 << 4)); // CC1IE // TAMIE auch deaktivieren?		
     }
 
     fn get_alarm(&self) -> u32 {
         let regs: &mut Registers = unsafe { mem::transmute(self.registers) };
-        regs.tamatchr.get()
+        regs.tar.get()
     }
 }
