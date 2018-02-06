@@ -146,12 +146,12 @@ pub unsafe fn reset_handler() {
    /* 
     let console = static_init!(
         capsules::console::Console<tm4c129x::uart::UART>,
-        capsules::console::Console::new(&tm4c129x::uart::UART7,
+        capsules::console::Console::new(&tm4c129x::uart::UART0,
                      115200,
                      &mut capsules::console::WRITE_BUF,
                      kernel::Grant::create()));
-    hil::uart::UART::set_client(&tm4c129x::uart::UART7, console);
-    tm4c129x::uart::UART7.specify_pins(&tm4c129x::gpio::PC[4], &tm4c129x::gpio::PC[5]);
+    hil::uart::UART::set_client(&tm4c129x::uart::UART0, console);
+    tm4c129x::uart::UART0.specify_pins(&tm4c129x::gpio::PA[0], &tm4c129x::gpio::PA[1]);
 */
     // Alarm
     let alarm_timer = &tm4c129x::gpt::TIMER0;
@@ -249,4 +249,3 @@ pub unsafe fn reset_handler() {
                                     FAULT_RESPONSE);
     kernel::main(&tm4c1294, &mut chip, &mut PROCESSES, &tm4c1294.ipc);
 }
-
