@@ -35,7 +35,7 @@ struct UARTRegisters {
     cc: VolatileCell<u32>,
 }
 
-const UART_BASE_ADDRS:[*mut UARTRegisters; 8] = [0x4000c000 as *mut UARTRegisters,
+const UART_BASE_ADDRS:[*mut UARTRegisters; 8] = [0x4000C000 as *mut UARTRegisters,
     0x4000D000 as *mut UARTRegisters,
     0x4000E000 as *mut UARTRegisters,
     0x4000F000 as *mut UARTRegisters,
@@ -57,14 +57,8 @@ pub struct UART {
 }
 
 
-pub static mut UART7: UART = UART::new(UART_BASE_ADDRS[7],
-                                          sysctl::Clock::UART(sysctl::RCGCUART::UART7));
-
-pub static mut UART1: UART = UART::new(UART_BASE_ADDRS[1],
-                                           sysctl::Clock::UART(sysctl::RCGCUART::UART1));
-
-pub static mut UART2: UART = UART::new(UART_BASE_ADDRS[2],
-                                           sysctl::Clock::UART(sysctl::RCGCUART::UART2));
+pub static mut UART0: UART = UART::new(UART_BASE_ADDRS[0],
+                                          sysctl::Clock::UART(sysctl::RCGCUART::UART0));
 
 impl UART {
     const fn new(base_addr: *mut UARTRegisters, clock: sysctl::Clock) -> UART {
@@ -82,11 +76,11 @@ impl UART {
 
     fn set_baud_rate(&self, baud_rate: u32) {
         let regs: &mut UARTRegisters = unsafe { mem::transmute(self.registers) };
-        let clk = 120000000 / baud_rate;
-        let divint = clk / 16;
-        let divfrac = 7; //ToDo
-        regs.ibrd.set(divint);
-        regs.fbrd.set(divfrac);
+		let brd = /*uartclk*/sysctl::get_system_frequency() * /*width(brdf)*/64 / (/*clkdiv*/16 * /*baud*/baud_rate);
+		let brdh = brd >> 6;
+		let brdf = brd % 64;
+        regs.ibrd.set(brdh);
+        regs.fbrd.set(brdf);
     }
 
     pub fn specify_pins(&self, rx: &'static gpio::GPIOPin, tx: &'static gpio::GPIOPin) {
