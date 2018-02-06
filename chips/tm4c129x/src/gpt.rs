@@ -107,7 +107,7 @@ impl hil::time::Time for AlarmTimer {
     fn is_armed(&self) -> bool {
         let regs: &mut Registers = unsafe { mem::transmute(self.registers) };
         //regs.imr.get() & (1 << 4) != 0 // TAMIM
-		regs.tamr.get() & (1 << 5) != 0 // TAMIE
+		regs.tamr.get() & (1 << 12) != 1 // TAMIE
     }
 }
 
@@ -128,6 +128,6 @@ impl hil::time::Alarm for AlarmTimer {
 
     fn get_alarm(&self) -> u32 {
         let regs: &mut Registers = unsafe { mem::transmute(self.registers) };
-        regs.tar.get()
+        regs.tailr.get()
     }
 }
