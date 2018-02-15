@@ -1,5 +1,5 @@
-use nvic;
 use kernel::common::VolatileCell;
+use nvic;
 
 const SYSEXC_BASE: usize = 0x400f9000;
 struct SYSEXC {

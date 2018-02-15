@@ -1,5 +1,5 @@
-use nvic;
 use kernel::common::VolatileCell;
+use nvic;
 
 const UDMA_BASE: usize = 0x400ff000;
 struct UDMA {

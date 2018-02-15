@@ -1,5 +1,5 @@
-use nvic;
 use kernel::common::VolatileCell;
+use nvic;
 
 const PWM0_BASE: usize = 0x40028000;
 struct PWM0 {

@@ -1,5 +1,5 @@
-use nvic;
 use kernel::common::VolatileCell;
+use nvic;
 
 const HIB_BASE: usize = 0x400fc000;
 

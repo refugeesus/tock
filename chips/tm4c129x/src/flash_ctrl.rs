@@ -1,7 +1,5 @@
-use nvic;
 use kernel::common::VolatileCell;
-
-
+use nvic;
 
 struct FLASH_CTRL {
     fma: VolatileCell<u32>,

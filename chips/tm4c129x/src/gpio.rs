@@ -9,21 +9,23 @@ use kernel::common::VolatileCell;
 use kernel::hil;
 use sysctl;
 
-const CLOCKS: [sysctl::RCGCGPIO; 15] = [sysctl::RCGCGPIO::GPIOA,
-                                        sysctl::RCGCGPIO::GPIOB,
-                                        sysctl::RCGCGPIO::GPIOC,
-                                        sysctl::RCGCGPIO::GPIOD,
-                                        sysctl::RCGCGPIO::GPIOE,
-                                        sysctl::RCGCGPIO::GPIOF,
-                                        sysctl::RCGCGPIO::GPIOG,
-                                        sysctl::RCGCGPIO::GPIOH,
-                                        sysctl::RCGCGPIO::GPIOJ,
-                                        sysctl::RCGCGPIO::GPIOK,
-                                        sysctl::RCGCGPIO::GPIOL,
-                                        sysctl::RCGCGPIO::GPIOM,
-                                        sysctl::RCGCGPIO::GPION,
-                                        sysctl::RCGCGPIO::GPIOP,
-                                        sysctl::RCGCGPIO::GPIOQ];
+const CLOCKS: [sysctl::RCGCGPIO; 15] = [
+    sysctl::RCGCGPIO::GPIOA,
+    sysctl::RCGCGPIO::GPIOB,
+    sysctl::RCGCGPIO::GPIOC,
+    sysctl::RCGCGPIO::GPIOD,
+    sysctl::RCGCGPIO::GPIOE,
+    sysctl::RCGCGPIO::GPIOF,
+    sysctl::RCGCGPIO::GPIOG,
+    sysctl::RCGCGPIO::GPIOH,
+    sysctl::RCGCGPIO::GPIOJ,
+    sysctl::RCGCGPIO::GPIOK,
+    sysctl::RCGCGPIO::GPIOL,
+    sysctl::RCGCGPIO::GPIOM,
+    sysctl::RCGCGPIO::GPION,
+    sysctl::RCGCGPIO::GPIOP,
+    sysctl::RCGCGPIO::GPIOQ,
+];
 
 #[repr(C, packed)]
 struct Registers {
@@ -63,28 +65,28 @@ struct Registers {
     pc: VolatileCell<u32>,
 }
 
-#[derive(Copy,Clone)]
+#[derive(Copy, Clone)]
 pub enum Mode {
     Input(InputMode),
     Output(OutputMode),
     InputOutput(InputOutputMode),
 }
 
-#[derive(Copy,Clone)]
+#[derive(Copy, Clone)]
 pub enum InputMode {
     Digital,
     DigitalAfsel,
     Analog,
 }
 
-#[derive(Copy,Clone)]
+#[derive(Copy, Clone)]
 pub enum OutputMode {
     Digital,
     DigitalAfsel,
     OpenDrain,
 }
 
-#[derive(Copy,Clone)]
+#[derive(Copy, Clone)]
 pub enum InputOutputMode {
     DigitalAfsel,
     OpenDrainAfsel,
@@ -98,7 +100,7 @@ pub enum InputOutputMode {
 /// "Peripheral Multiplexing I/O Lines" section of the SAM4L datasheet[^1].
 ///
 /// [^1]: Section 3.2, pages 19-29
-#[derive(Copy,Clone)]
+#[derive(Copy, Clone)]
 pub enum PeripheralFunction {
     A = 1,
     B = 2,
@@ -116,7 +118,6 @@ pub enum PeripheralFunction {
     N = 14,
     O = 15,
 }
-
 
 const BASE_ADDRESS: usize = 0x40058000;
 const SIZE: usize = 0x00001000;
@@ -223,194 +224,224 @@ impl Port {
 /// Port A
 pub static mut PA: Port = Port {
     port: (BASE_ADDRESS + 0 * SIZE) as *mut Registers,
-    pins: [GPIOPin::new(PA0),
-           GPIOPin::new(PA1),
-           GPIOPin::new(PA2),
-           GPIOPin::new(PA3),
-           GPIOPin::new(PA4),
-           GPIOPin::new(PA5),
-           GPIOPin::new(PA6),
-           GPIOPin::new(PA7)],
+    pins: [
+        GPIOPin::new(PA0),
+        GPIOPin::new(PA1),
+        GPIOPin::new(PA2),
+        GPIOPin::new(PA3),
+        GPIOPin::new(PA4),
+        GPIOPin::new(PA5),
+        GPIOPin::new(PA6),
+        GPIOPin::new(PA7),
+    ],
 };
 
 /// Port B
 pub static mut PB: Port = Port {
     port: (BASE_ADDRESS + 1 * SIZE) as *mut Registers,
-    pins: [GPIOPin::new(PB0),
+    pins: [
+        GPIOPin::new(PB0),
         GPIOPin::new(PB1),
         GPIOPin::new(PB2),
         GPIOPin::new(PB3),
         GPIOPin::new(PB4),
         GPIOPin::new(PB5),
         GPIOPin::new(PB6),
-        GPIOPin::new(PB7)],
+        GPIOPin::new(PB7),
+    ],
 };
 
 //// Port C
 pub static mut PC: Port = Port {
     port: (BASE_ADDRESS + 2 * SIZE) as *mut Registers,
-    pins: [GPIOPin::new(PC0),
+    pins: [
+        GPIOPin::new(PC0),
         GPIOPin::new(PC1),
         GPIOPin::new(PC2),
         GPIOPin::new(PC3),
         GPIOPin::new(PC4),
         GPIOPin::new(PC5),
         GPIOPin::new(PC6),
-        GPIOPin::new(PC7)],
+        GPIOPin::new(PC7),
+    ],
 };
 
 //// Port D
 pub static mut PD: Port = Port {
     port: (BASE_ADDRESS + 3 * SIZE) as *mut Registers,
-    pins: [GPIOPin::new(PD0),
+    pins: [
+        GPIOPin::new(PD0),
         GPIOPin::new(PD1),
         GPIOPin::new(PD2),
         GPIOPin::new(PD3),
         GPIOPin::new(PD4),
         GPIOPin::new(PD5),
         GPIOPin::new(PD6),
-        GPIOPin::new(PD7)],
+        GPIOPin::new(PD7),
+    ],
 };
 
 //// Port E
 pub static mut PE: Port = Port {
     port: (BASE_ADDRESS + 4 * SIZE) as *mut Registers,
-    pins: [GPIOPin::new(PE0),
+    pins: [
+        GPIOPin::new(PE0),
         GPIOPin::new(PE1),
         GPIOPin::new(PE2),
         GPIOPin::new(PE3),
         GPIOPin::new(PE4),
         GPIOPin::new(PE5),
         GPIOPin::new(PE6),
-        GPIOPin::new(PE7)],
+        GPIOPin::new(PE7),
+    ],
 };
 
 //// Port F
 pub static mut PF: Port = Port {
     port: (BASE_ADDRESS + 5 * SIZE) as *mut Registers,
-    pins: [GPIOPin::new(PF0),
+    pins: [
+        GPIOPin::new(PF0),
         GPIOPin::new(PF1),
         GPIOPin::new(PF2),
         GPIOPin::new(PF3),
         GPIOPin::new(PF4),
         GPIOPin::new(PF5),
         GPIOPin::new(PF6),
-        GPIOPin::new(PF7)],
+        GPIOPin::new(PF7),
+    ],
 };
 
 //// Port G
 pub static mut PG: Port = Port {
     port: (BASE_ADDRESS + 6 * SIZE) as *mut Registers,
-    pins: [GPIOPin::new(PG0),
+    pins: [
+        GPIOPin::new(PG0),
         GPIOPin::new(PG1),
         GPIOPin::new(PG2),
         GPIOPin::new(PG3),
         GPIOPin::new(PG4),
         GPIOPin::new(PG5),
         GPIOPin::new(PG6),
-        GPIOPin::new(PG7)],
+        GPIOPin::new(PG7),
+    ],
 };
 
 //// Port H
 pub static mut PH: Port = Port {
     port: (BASE_ADDRESS + 7 * SIZE) as *mut Registers,
-    pins: [GPIOPin::new(PH0),
+    pins: [
+        GPIOPin::new(PH0),
         GPIOPin::new(PH1),
         GPIOPin::new(PH2),
         GPIOPin::new(PH3),
         GPIOPin::new(PH4),
         GPIOPin::new(PH5),
         GPIOPin::new(PH6),
-        GPIOPin::new(PH7)],
+        GPIOPin::new(PH7),
+    ],
 };
 
 //// Port J
 pub static mut PJ: Port = Port {
     port: (BASE_ADDRESS + 8 * SIZE) as *mut Registers,
-    pins: [GPIOPin::new(PJ0),
+    pins: [
+        GPIOPin::new(PJ0),
         GPIOPin::new(PJ1),
         GPIOPin::new(PJ2),
         GPIOPin::new(PJ3),
         GPIOPin::new(PJ4),
         GPIOPin::new(PJ5),
         GPIOPin::new(PJ6),
-        GPIOPin::new(PJ7)],
+        GPIOPin::new(PJ7),
+    ],
 };
 
 //// Port K
 pub static mut PK: Port = Port {
     port: (BASE_ADDRESS + 9 * SIZE) as *mut Registers,
-    pins: [GPIOPin::new(PK0),
+    pins: [
+        GPIOPin::new(PK0),
         GPIOPin::new(PK1),
         GPIOPin::new(PK2),
         GPIOPin::new(PK3),
         GPIOPin::new(PK4),
         GPIOPin::new(PK5),
         GPIOPin::new(PK6),
-        GPIOPin::new(PK7)],
+        GPIOPin::new(PK7),
+    ],
 };
 //// Port L
 pub static mut PL: Port = Port {
     port: (BASE_ADDRESS + 10 * SIZE) as *mut Registers,
-    pins: [GPIOPin::new(PL0),
+    pins: [
+        GPIOPin::new(PL0),
         GPIOPin::new(PL1),
         GPIOPin::new(PL2),
         GPIOPin::new(PL3),
         GPIOPin::new(PL4),
         GPIOPin::new(PL5),
         GPIOPin::new(PL6),
-        GPIOPin::new(PL7)],
+        GPIOPin::new(PL7),
+    ],
 };
 //// Port M
 pub static mut PM: Port = Port {
     port: (BASE_ADDRESS + 11 * SIZE) as *mut Registers,
-    pins: [GPIOPin::new(PM0),
+    pins: [
+        GPIOPin::new(PM0),
         GPIOPin::new(PM1),
         GPIOPin::new(PM2),
         GPIOPin::new(PM3),
         GPIOPin::new(PM4),
         GPIOPin::new(PM5),
         GPIOPin::new(PM6),
-        GPIOPin::new(PM7)],
+        GPIOPin::new(PM7),
+    ],
 };
 
 //// Port N
 pub static mut PN: Port = Port {
     port: (BASE_ADDRESS + 12 * SIZE) as *mut Registers,
-    pins: [GPIOPin::new(PN0),
+    pins: [
+        GPIOPin::new(PN0),
         GPIOPin::new(PN1),
         GPIOPin::new(PN2),
         GPIOPin::new(PN3),
         GPIOPin::new(PN4),
         GPIOPin::new(PN5),
         GPIOPin::new(PN6),
-        GPIOPin::new(PN7)],
+        GPIOPin::new(PN7),
+    ],
 };
 
 //// Port P
 pub static mut PP: Port = Port {
     port: (BASE_ADDRESS + 13 * SIZE) as *mut Registers,
-    pins: [GPIOPin::new(PP0),
+    pins: [
+        GPIOPin::new(PP0),
         GPIOPin::new(PP1),
         GPIOPin::new(PP2),
         GPIOPin::new(PP3),
         GPIOPin::new(PP4),
         GPIOPin::new(PP5),
         GPIOPin::new(PP6),
-        GPIOPin::new(PP7)],
+        GPIOPin::new(PP7),
+    ],
 };
 
 //// Port Q
 pub static mut PQ: Port = Port {
     port: (BASE_ADDRESS + 14 * SIZE) as *mut Registers,
-    pins: [GPIOPin::new(PQ0),
+    pins: [
+        GPIOPin::new(PQ0),
         GPIOPin::new(PQ1),
         GPIOPin::new(PQ2),
         GPIOPin::new(PQ3),
         GPIOPin::new(PQ4),
         GPIOPin::new(PQ5),
         GPIOPin::new(PQ6),
-        GPIOPin::new(PQ7)],
+        GPIOPin::new(PQ7),
+    ],
 };
 
 pub struct GPIOPin {
@@ -470,7 +501,6 @@ impl GPIOPin {
             InputOutputMode::DigitalAfsel => {
                 self.enable_digital();
                 self.enable_alternate();
-
             }
             InputOutputMode::OpenDrainAfsel => {
                 self.enable_alternate();
@@ -568,25 +598,19 @@ impl GPIOPin {
     /// | 0b01         | Rising edge    |
     /// | 0b10         | Falling edge   |
 
-
     pub fn set_interrupt_mode(&self, mode: u8) {
         let port: &mut Registers = unsafe { mem::transmute(self.port) };
-		
-		if(mode == 0b00)
-		{	
-			port.is.set(0x0);
-			port.ibe.set(port.ibe.get() | (1 << self.pin));
-		}
-        else if(mode == 0b01)
-		{	
-			port.is.set(0x0);
-			port.iev.set(port.iev.get() | (1 << self.pin));
-        } 
-        else if(mode == 0b10)
-		{
-			port.is.set(0x0);
+
+        if (mode == 0b00) {
+            port.is.set(0x0);
+            port.ibe.set(port.ibe.get() | (1 << self.pin));
+        } else if (mode == 0b01) {
+            port.is.set(0x0);
+            port.iev.set(port.iev.get() | (1 << self.pin));
+        } else if (mode == 0b10) {
+            port.is.set(0x0);
             port.iev.set(port.iev.get() & !(1 << self.pin));
-        } 
+        }
     }
 
     pub fn enable_interrupt(&self) {
@@ -608,7 +632,9 @@ impl GPIOPin {
     }
 
     pub fn handle_interrupt(&self) {
-        self.client.get().map(|client| { client.fired(self.client_data.get()); });
+        self.client.get().map(|client| {
+            client.fired(self.client_data.get());
+        });
     }
 
     pub fn read(&self) -> bool {
@@ -635,7 +661,6 @@ impl GPIOPin {
 impl hil::Controller for GPIOPin {
     type Config = Mode;
 
-
     fn configure(&self, config: Self::Config) {
         GPIOPin::configure(self, config)
     }
@@ -660,7 +685,6 @@ impl hil::gpio::PinCtl for GPIOPin {
         }
     }
 }
-
 
 impl hil::gpio::Pin for GPIOPin {
     fn disable(&self) {
@@ -706,5 +730,3 @@ impl hil::gpio::Pin for GPIOPin {
         GPIOPin::disable_interrupt(self);
     }
 }
-
-

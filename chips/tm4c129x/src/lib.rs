@@ -99,7 +99,6 @@ pub static BASE_VECTORS: [unsafe extern fn(); 16] = [
 pub static IRQS: [unsafe extern "C" fn(); 111] = [generic_isr; 111];
 
 pub unsafe fn init() {
-
     // Relocate data segment.
     // Assumes data starts right after text segment as specified by the linker
     // file.
@@ -123,8 +122,8 @@ pub unsafe fn init() {
         *pdest = 0;
         pdest = pdest.offset(1);
     }
-    
-	cortexm4::nvic::disable_all();
+
+    cortexm4::nvic::disable_all();
     cortexm4::nvic::clear_all_pending();
     cortexm4::nvic::enable_all();
 }

@@ -17,12 +17,7 @@ int main(void) {
       }
     }
 
-    for(int i=0; i < 10000; i++)
-    {
-    	int d = led_count();
-
-    }
     // This delay uses an underlying timer in the kernel.
-    //delay_ms(250);
+    delay_ms(1000);
   }
 }

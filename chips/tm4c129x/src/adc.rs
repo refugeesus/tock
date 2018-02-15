@@ -2,7 +2,6 @@
 use kernel::common::VolatileCell;
 use nvic;
 
-
 struct ADCRegister {
     actss: VolatileCell<u32>,
     ris: VolatileCell<u32>,
@@ -77,6 +76,5 @@ struct ADCRegister {
     pc: VolatileCell<u32>,
     cc: VolatileCell<u32>,
 }
-
 
 const ADC0_BASE: usize = 0x40038000;
