@@ -111,7 +111,6 @@ impl hil::time::Time for AlarmTimer {
 
     fn is_armed(&self) -> bool {
         let regs: &mut Registers = unsafe { mem::transmute(self.registers) };
-        //regs.imr.get() & (1 << 4) != 0 // TAMIM
         regs.tamr.get() & (1 << 5) != 0 // TAMIE
     }
 }
@@ -123,10 +122,7 @@ impl hil::time::Alarm for AlarmTimer {
     }
 
     fn set_alarm(&self, tics: u32) {
-        let regs: &mut Registers = unsafe { mem::transmute(self.registers) };
-        //regs.tamatchr.set(regs.tar.get() - ((tics - regs.tar.get()) *
-        //(sysctl::get_system_frequency() / 16000)));
-        //regs.tamatchr.set(regs.tar.get() + (tics * (sysctl::get_system_frequency() / 16000)));
+        let regs: &mut Registers = unsafe { mem::transmute(self.registers) };        
         regs.tamatchr.set(tics);
         regs.tamr.set(regs.tamr.get() | (1 << 5)); // clear TAMIE
     }

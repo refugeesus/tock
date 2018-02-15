@@ -1,6 +1,5 @@
 //! Board file for EK-TM4C1294XL development platform.
 //!
-
 #![no_std]
 #![no_main]
 #![feature(asm, const_fn, lang_items, compiler_builtins_lib)]
@@ -247,11 +246,6 @@ pub unsafe fn reset_handler() {
         led: led,
         button: button,
     };
-
-    //tm4c129x::gpio::PN[1].set();
-    //tm4c129x::gpio::PN[0].set();
-    //tm4c129x::gpio::PF[4].set();
-    //tm4c129x::gpio::PF[0].set();
 
     let mut chip = tm4c129x::chip::Tm4c129x::new();
 
