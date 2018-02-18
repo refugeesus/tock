@@ -1,7 +1,3 @@
-//! Peripheral implementations for the SAM4L MCU.
-//!
-//! http://www.atmel.com/microsite/sam4l/default.aspx
-
 #![crate_name = "tm4c129x"]
 #![crate_type = "rlib"]
 #![feature(repr_align, attr_literals, const_cell_new)]

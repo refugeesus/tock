@@ -1,4 +1,4 @@
-//! Interrupt mapping and DMA channel setup.
+//! Interrupt mapping
 
 use cortexm4;
 use gpio;

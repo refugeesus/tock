@@ -18,6 +18,6 @@ int main(void) {
     }
 
     // This delay uses an underlying timer in the kernel.
-    delay_ms(1000);
+    delay_ms(250);
   }
 }

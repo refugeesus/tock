@@ -1,4 +1,4 @@
-//! Implementation of the power manager (PM) peripheral.
+//! Implementation of the System Control peripheral.
 
 use core::cell::Cell;
 use core::mem;
@@ -298,25 +298,17 @@ pub enum OscillatorFrequency {
 
 #[derive(Copy, Clone, Debug)]
 pub enum SystemClockSource {
-    /// Use the RCSYS clock (which the system starts up on anyways). Final
-    /// system frequency will be 115 kHz. Note that while this is the default,
-    /// Tock is NOT guaranteed to work on this setting and will likely fail.
+   
     PioscAt16MHz,
 
     PllPioscAt120MHz {
         frequency: OscillatorFrequency,
     },
 
-    /// Use an external crystal oscillator as the direct source for the
-    /// system clock. The final system frequency will match the frequency of
-    /// the external oscillator.
     PllMoscAt120MHz {
         frequency: OscillatorFrequency,
     },
 
-    /// Use an external crystal oscillator as the input to the internal phase
-    /// locked loop (PLL) for the system clock. This results in a final
-    /// frequency of 48 MHz.
     Mosc {
         frequency: OscillatorFrequency,
     },
@@ -324,9 +316,6 @@ pub enum SystemClockSource {
 
 const BASE_ADDRESS: usize = 0x400FE000;
 
-/// Contains state for the power management peripheral. This includes the
-/// configurations for various system clocks and the final frequency that the
-/// system is running at.
 pub struct SystemControl {
     registers: *mut Registers,
     /// Frequency at which the system clock is running.

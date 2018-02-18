@@ -93,13 +93,6 @@ pub enum InputOutputMode {
 }
 
 /// Peripheral functions that may be assigned to a `GPIOPin`.
-///
-/// GPIO pins on the SAM4L may serve multiple functions. In addition to the
-/// default functionality, each pin can be assigned up to eight different
-/// peripheral functions. The various functions for each pin are described in
-/// "Peripheral Multiplexing I/O Lines" section of the SAM4L datasheet[^1].
-///
-/// [^1]: Section 3.2, pages 19-29
 #[derive(Copy, Clone)]
 pub enum PeripheralFunction {
     A = 1,
@@ -122,24 +115,6 @@ pub enum PeripheralFunction {
 const BASE_ADDRESS: usize = 0x40058000;
 const SIZE: usize = 0x00001000;
 
-/// Reference count for the number of GPIO interrupts currently active.
-///
-/// This is used to determine if it's possible for the SAM4L to go into
-/// WAIT/RETENTION mode, since those modes will not be woken up by GPIO
-/// interrupts.
-///
-/// This is an `AtomicUsize` because it has to be a `Sync` type to live in a
-/// global---Rust has no way of knowing we're not going to use it across
-/// threads. Use `Ordering::Relaxed` when reading/writing the value to get LLVM
-/// to just use plain loads and stores instead of atomic operations.
-pub static INTERRUPT_COUNT: AtomicUsize = AtomicUsize::new(0);
-
-/// Name of the GPIO pin on the SAM4L.
-///
-/// The "Package and Pinout" section[^1] of the SAM4L datasheet shows the
-/// mapping between these names and hardware pins on different chip packages.
-///
-/// [^1]: Section 3.1, pages 10-18
 #[derive(Copy,Clone)]
 #[cfg_attr(rustfmt, rustfmt_skip)]
 pub enum Pin {
@@ -160,24 +135,6 @@ pub enum Pin {
     PQ0, PQ1, PQ2, PQ3, PQ4, PQ5, PQ6, PQ7,
 }
 
-/// GPIO port that manages 32 pins.
-///
-/// The SAM4L divides GPIOs into _ports_ that each manage a group of 32
-/// individual pins. There are up to three ports, depending particular chip
-/// (see[^1]).
-///
-/// In general, the kernel and applications should care about individual
-/// [GPIOPin](struct.GPIOPin.html)s. However, mirroring the hardware grouping in
-/// Rust is useful, internally, for correctly handling and dispatching
-/// interrupts.
-///
-/// The port itself is a set of 32-bit memory-mapped I/O registers. Each
-/// register has a bit for each pin in the port. Pins are, thus, named by their
-/// port and offset bit in each register that controls is. For example, the
-/// first port has pins called "PA00" thru "PA31".
-///
-/// [^1]: SAM4L datasheet section 23.8 (page 573): "Module Configuration" for
-///       GPIO
 pub struct Port {
     port: *mut Registers,
     pins: [GPIOPin; 8],
@@ -201,13 +158,9 @@ impl Port {
     pub fn handle_interrupt(&self) {
         let port: &mut Registers = unsafe { mem::transmute(self.port) };
 
-        // Interrupt Flag Register (IFR) bits are only valid if the same bits
-        // are enabled in Interrupt Enabled Register (IER).
         let mut fired = port.ris.get() & port.im.get();
 
-        // About to handle all the interrupts, so just clear them now to get
-        // over with it.
-        port.icr.set(0xFF); //To Do readonly
+        port.icr.set(0xFF);
 
         loop {
             let pin = fired.trailing_zeros() as usize;

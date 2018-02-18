@@ -125,12 +125,8 @@ unsafe fn set_pin_primary_functions() {
 }
 */
 
-/// Reset Handler.
-///
-/// This symbol is loaded into vector table by the SAM4L chip crate.
-/// When the chip first powers on or later does a hard reset, after the core
-/// initializes all the hardware, the address of this function is loaded and
-/// execution begins here.
+/// Reset Handler
+
 #[no_mangle]
 pub unsafe fn reset_handler() {
     tm4c129x::init();
@@ -190,9 +186,9 @@ pub unsafe fn reset_handler() {
             (
                 &tm4c129x::gpio::PN[1],
                 capsules::led::ActivationMode::ActiveHigh
-            )
+            ) // D4
         ]
-    ); // D4
+    ); 
     let led = static_init!(
         capsules::led::LED<'static, tm4c129x::gpio::GPIOPin>,
         capsules::led::LED::new(led_pins)
@@ -209,9 +205,9 @@ pub unsafe fn reset_handler() {
             (
                 &tm4c129x::gpio::PJ[1],
                 capsules::button::GpioMode::LowWhenPressed
-            )
+            ) //USR_SW2
         ]
-    ); //USR_SW2
+    ); 
     let button = static_init!(
         capsules::button::Button<'static, tm4c129x::gpio::GPIOPin>,
         capsules::button::Button::new(button_pins, kernel::Grant::create())
@@ -229,7 +225,7 @@ pub unsafe fn reset_handler() {
             &tm4c129x::gpio::PC[6], 
             &tm4c129x::gpio::PC[7],
         ]
-    ); // D7
+    ); 
     let gpio = static_init!(
         capsules::gpio::GPIO<'static, tm4c129x::gpio::GPIOPin>,
         capsules::gpio::GPIO::new(gpio_pins)
@@ -250,6 +246,7 @@ pub unsafe fn reset_handler() {
     let mut chip = tm4c129x::chip::Tm4c129x::new();
 
     tm4c1294.console.initialize();
+    
     // Attach the kernel debug interface to this console
     let kc = static_init!(capsules::console::App, capsules::console::App::default());
     kernel::debug::assign_console_driver(Some(tm4c1294.console), kc);
