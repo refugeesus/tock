@@ -46,3 +46,5 @@ doc/rustdoc
 [._]s[a-v][a-z]
 [._]sw[a-p]
 /.metadata/
+/.cproject
+/.project

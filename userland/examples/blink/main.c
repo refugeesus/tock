@@ -2,7 +2,6 @@
 #include <timer.h>
 
 int main(void) {
-
   // Ask the kernel how many LEDs are on this board.
   int num_leds = led_count();
 
