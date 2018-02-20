@@ -162,7 +162,7 @@ impl IndexMut<usize> for Port {
 impl Port {
     pub fn handle_interrupt(&self) {
         let port: &Registers = unsafe { &*self.port };
-        
+
         let mut fired = port.ris.get() & port.im.get();
 
         port.icr.set(0xFF);

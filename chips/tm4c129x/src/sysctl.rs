@@ -297,16 +297,13 @@ pub enum OscillatorFrequency {
 
 #[derive(Copy, Clone, Debug)]
 pub enum SystemClockSource {
-   
     PioscAt16MHz,
 
-    PllPioscAt120MHz ,
+    PllPioscAt120MHz,
 
     PllMoscAt120MHz,
 
-    Mosc {
-        frequency: OscillatorFrequency,
-    },
+    Mosc { frequency: OscillatorFrequency },
 }
 
 const BASE_ADDRESS: usize = 0x400FE000;

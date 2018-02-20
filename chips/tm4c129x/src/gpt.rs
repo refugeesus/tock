@@ -120,7 +120,7 @@ impl hil::time::Alarm for AlarmTimer {
     }
 
     fn set_alarm(&self, tics: u32) {
-        let regs: &Registers = unsafe { &*self.registers };        
+        let regs: &Registers = unsafe { &*self.registers };
         regs.tamatchr.set(tics);
         regs.tamr.set(regs.tamr.get() | (1 << 5));
     }
