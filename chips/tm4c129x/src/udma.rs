@@ -1,7 +1,10 @@
+#[allow(unused_imports)]
 use kernel::common::VolatileCell;
-use nvic;
 
+#[allow(dead_code)]
 const UDMA_BASE: usize = 0x400ff000;
+
+#[allow(dead_code)]
 struct UDMA {
     stat: VolatileCell<u32>,
     cfg: VolatileCell<u32>,

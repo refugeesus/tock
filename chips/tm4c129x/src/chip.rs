@@ -1,10 +1,8 @@
 //! Interrupt mapping
 
 use cortexm4;
-use gpio;
 use gpt;
 use kernel::Chip;
-use kernel::common::{Queue, RingBuffer};
 use uart;
 
 pub struct Tm4c129x {

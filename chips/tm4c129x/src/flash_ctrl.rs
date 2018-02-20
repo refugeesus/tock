@@ -1,6 +1,8 @@
+#[allow(unused_imports)]
 use kernel::common::VolatileCell;
-use nvic;
 
+#[allow(dead_code)]
+#[allow(non_camel_case_types)]
 struct FLASH_CTRL {
     fma: VolatileCell<u32>,
     fmd: VolatileCell<u32>,
@@ -68,4 +70,5 @@ struct FLASH_CTRL {
     fmppe15: VolatileCell<u32>,
 }
 
+#[allow(dead_code)]
 const FLASH_CTRL_BASE: usize = 0x400fd000;

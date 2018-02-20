@@ -1,8 +1,10 @@
+#[allow(unused_imports)]
 use kernel::common::VolatileCell;
-use nvic;
 
+#[allow(dead_code)]
 const HIB_BASE: usize = 0x400fc000;
 
+#[allow(dead_code)]
 struct HIBRegisters {
     rtcc: VolatileCell<u32>,
     rtcm0: VolatileCell<u32>,

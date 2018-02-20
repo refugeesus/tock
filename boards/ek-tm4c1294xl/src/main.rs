@@ -131,9 +131,7 @@ unsafe fn set_pin_primary_functions() {
 pub unsafe fn reset_handler() {
     tm4c129x::init();
     
-    tm4c129x::sysctl::PSYSCTLM.setup_system_clock(tm4c129x::sysctl::SystemClockSource::PllPioscAt120MHz{
-        frequency: tm4c129x::sysctl::OscillatorFrequency::Frequency25MHz,
-    });
+    tm4c129x::sysctl::PSYSCTLM.setup_system_clock(tm4c129x::sysctl::SystemClockSource::PllPioscAt120MHz);
 
     let console = static_init!(
         capsules::console::Console<tm4c129x::uart::UART>,

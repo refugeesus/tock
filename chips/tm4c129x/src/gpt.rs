@@ -1,5 +1,4 @@
 use core::cell::Cell;
-use core::mem;
 use kernel::common::VolatileCell;
 use kernel::hil;
 use sysctl;
@@ -61,12 +60,12 @@ impl AlarmTimer {
     }
 
     fn disable_interrupts(&self) {
-        let regs: &mut Registers = unsafe { mem::transmute(self.registers) };
+        let regs: &Registers = unsafe { &*self.registers };
         regs.tamr.set(regs.tamr.get() & !(1 << 5)); // GPTM Timer A Match Interrupt
     }
 
     pub fn handle_interrupt(&self) {
-        let regs: &mut Registers = unsafe { mem::transmute(self.registers) };
+        let regs: &Registers = unsafe { &*self.registers };
         // check if caused by TAMMIS
         if regs.mis.get() & (1 << 4) != 0 {
             self.disable_interrupts();
@@ -87,7 +86,7 @@ impl hil::Controller for AlarmTimer {
         }
 
         self.client.set(Some(client));
-        let regs: &mut Registers = unsafe { mem::transmute(self.registers) };
+        let regs: &Registers = unsafe { &*self.registers };
 
         regs.ctl.set(0x0);
         regs.cfg.set(0x0);
@@ -109,25 +108,25 @@ impl hil::time::Time for AlarmTimer {
     }
 
     fn is_armed(&self) -> bool {
-        let regs: &mut Registers = unsafe { mem::transmute(self.registers) };
+        let regs: &Registers = unsafe { &*self.registers };
         regs.tamr.get() & (1 << 5) != 0
     }
 }
 
 impl hil::time::Alarm for AlarmTimer {
     fn now(&self) -> u32 {
-        let regs: &mut Registers = unsafe { mem::transmute(self.registers) };
+        let regs: &Registers = unsafe { &*self.registers };
         regs.tar.get()
     }
 
     fn set_alarm(&self, tics: u32) {
-        let regs: &mut Registers = unsafe { mem::transmute(self.registers) };        
+        let regs: &Registers = unsafe { &*self.registers };        
         regs.tamatchr.set(tics);
         regs.tamr.set(regs.tamr.get() | (1 << 5));
     }
 
     fn get_alarm(&self) -> u32 {
-        let regs: &mut Registers = unsafe { mem::transmute(self.registers) };
+        let regs: &Registers = unsafe { &*self.registers };
         regs.tamatchr.get()
     }
 }

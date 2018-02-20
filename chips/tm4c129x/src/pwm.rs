@@ -1,7 +1,10 @@
+#[allow(unused_imports)]
 use kernel::common::VolatileCell;
-use nvic;
 
+#[allow(dead_code)]
 const PWM0_BASE: usize = 0x40028000;
+
+#[allow(dead_code)]
 struct PWM0 {
     ctl: VolatileCell<u32>,
     sync: VolatileCell<u32>,

@@ -1,0 +1,3 @@
+*.gnumcueclipse.debug.gdbjtag.openocd.prefs
+*.gnumcueclipse.managedbuild.cross.arm.prefs
+*.settings.xml

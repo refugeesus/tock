@@ -1,7 +1,6 @@
 //! Implementation of the System Control peripheral.
 
 use core::cell::Cell;
-use core::mem;
 use kernel::common::VolatileCell;
 
 #[derive(Copy, Clone, Debug)]
@@ -54,7 +53,7 @@ pub enum RCGCUART {
     UART7,
 }
 
-#[repr(C, packed)]
+#[repr(C)]
 struct Registers {
     did0: VolatileCell<u32>,
     did1: VolatileCell<u32>,
@@ -301,13 +300,9 @@ pub enum SystemClockSource {
    
     PioscAt16MHz,
 
-    PllPioscAt120MHz {
-        frequency: OscillatorFrequency,
-    },
+    PllPioscAt120MHz ,
 
-    PllMoscAt120MHz {
-        frequency: OscillatorFrequency,
-    },
+    PllMoscAt120MHz,
 
     Mosc {
         frequency: OscillatorFrequency,
@@ -342,17 +337,17 @@ impl SystemControl {
                 self.system_frequency.set(16000000);
             }
 
-            SystemClockSource::PllPioscAt120MHz { frequency } => {
+            SystemClockSource::PllPioscAt120MHz => {
                 configure_internal_oscillator_pll();
                 self.system_frequency.set(120000000);
             }
 
-            SystemClockSource::PllMoscAt120MHz { frequency } => {
-                configure_external_oscillator_pll(frequency);
+            SystemClockSource::PllMoscAt120MHz => {
+                configure_external_oscillator_pll();
                 self.system_frequency.set(120000000);
             }
             SystemClockSource::Mosc { frequency } => {
-                configure_external_oscillator(frequency);
+                configure_external_oscillator();
                 match frequency {
                     OscillatorFrequency::Frequency25MHz => self.system_frequency.set(25000000),
                 };
@@ -362,7 +357,7 @@ impl SystemControl {
 }
 
 unsafe fn configure_internal_oscillator_pll() {
-    let regs: &mut Registers = mem::transmute(PSYSCTLM.registers);
+    let regs: &Registers = &*PSYSCTLM.registers;
 
     regs.rsclkcfg.set(0x00000000);
 
@@ -378,8 +373,8 @@ unsafe fn configure_internal_oscillator_pll() {
         .set(regs.rsclkcfg.get() | 0x10000000 | 0x80000000 | 0x3);
 }
 
-unsafe fn configure_external_oscillator(frequency: OscillatorFrequency) {
-    let regs: &mut Registers = mem::transmute(PSYSCTLM.registers);
+unsafe fn configure_external_oscillator() {
+    let regs: &Registers = &*PSYSCTLM.registers;
 
     regs.moscctl.set(0x10);
     while regs.ris.get() & (1 << 8) == (0) {}
@@ -391,8 +386,8 @@ unsafe fn configure_external_oscillator(frequency: OscillatorFrequency) {
     regs.rsclkcfg.set(regs.rsclkcfg.get() | 0x80000000);
 }
 
-unsafe fn configure_external_oscillator_pll(frequency: OscillatorFrequency) {
-    let regs: &mut Registers = mem::transmute(PSYSCTLM.registers);
+unsafe fn configure_external_oscillator_pll() {
+    let regs: &Registers = &*PSYSCTLM.registers;
 
     regs.moscctl.set(0x10); // OSCRNG
     while regs.ris.get() & (1 << 8) == (0) {}
@@ -415,7 +410,7 @@ pub fn get_system_frequency() -> u32 {
 }
 
 pub unsafe fn enable_clock(clock: Clock) {
-    let regs: &mut Registers = unsafe { mem::transmute(PSYSCTLM.registers) };
+    let regs: &Registers = &*PSYSCTLM.registers;
     match clock {
         Clock::TIMER(c) => regs.rcgctimer.set(regs.rcgctimer.get() | 1 << (c as u32)),
         Clock::GPIO(c) => regs.rcgcgpio.set(regs.rcgcgpio.get() | 1 << (c as u32)),
