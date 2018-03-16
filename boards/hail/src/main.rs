@@ -74,6 +74,7 @@ struct Hail {
     ipc: kernel::ipc::IPC,
     crc: &'static capsules::crc::Crc<'static, sam4l::crccu::Crccu<'static>>,
     dac: &'static capsules::dac::Dac<'static>,
+    acifc: &'static capsules::acifc::Acifc<'static, sam4l::acifc::Acifc>,
 }
 
 /// Mapping of integer syscalls to objects that implement syscalls.
@@ -103,6 +104,8 @@ impl Platform for Hail {
 
             capsules::dac::DRIVER_NUM => f(Some(self.dac)),
 
+            capsules::acifc::DRIVER_NUM => f(Some(self.acifc)),
+
             kernel::ipc::DRIVER_NUM => f(Some(&self.ipc)),
             _ => f(None),
         }
@@ -116,8 +119,8 @@ unsafe fn set_pin_primary_functions() {
 
     PA[04].configure(Some(A)); // A0 - ADC0
     PA[05].configure(Some(A)); // A1 - ADC1
-    PA[06].configure(Some(A)); // DAC
-    PA[07].configure(None); //... WKP - Wakeup
+    PA[06].configure(Some(A)); // DAC // ACIFC A - N
+    PA[07].configure(None); //... WKP - Wakeup // ACIFC A - P
     PA[08].configure(Some(A)); // FTDI_RTS - USART0 RTS
     PA[09].configure(None); //... ACC_INT1 - FXOS8700CQ Interrupt 1
     PA[10].configure(None); //... unused
@@ -147,8 +150,8 @@ unsafe fn set_pin_primary_functions() {
 
     PB[00].configure(Some(A)); // SENSORS_SDA - TWIMS1 SDA
     PB[01].configure(Some(A)); // SENSORS_SCL - TWIMS1 SCL
-    PB[02].configure(Some(A)); // A2 - ADC3
-    PB[03].configure(Some(A)); // A3 - ADC4
+    PB[02].configure(Some(A)); // A2 - ADC3 // ACIFC B - N
+    PB[03].configure(Some(A)); // A3 - ADC4 // ACIFC B - P
     PB[04].configure(Some(A)); // A4 - ADC5
     PB[05].configure(Some(A)); // A5 - ADC6
     PB[06].configure(Some(A)); // NRF_CTS - USART3 RTS
@@ -443,6 +446,13 @@ pub unsafe fn reset_handler() {
         capsules::dac::Dac::new(&mut sam4l::dac::DAC)
     );
 
+    // ACIFC
+    let acifc = static_init!(
+        capsules::acifc::Acifc<'static, sam4l::acifc::Acifc>, 
+        capsules::acifc::Acifc::new(&mut sam4l::acifc::ACIFC)
+    );
+    sam4l::acifc::ACIFC.set_client();
+
     let hail = Hail {
         console: console,
         gpio: gpio,
@@ -460,6 +470,7 @@ pub unsafe fn reset_handler() {
         ipc: kernel::ipc::IPC::new(),
         crc: crc,
         dac: dac,
+        acifc: acifc,
     };
 
     // Need to reset the nRF on boot

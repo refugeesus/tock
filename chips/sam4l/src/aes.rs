@@ -157,6 +157,8 @@ pub struct Aes<'a> {
     stop_index: Cell<usize>,
 }
 
+pub static mut AES: Aes<'static> = Aes::new();
+
 impl<'a> Aes<'a> {
     pub const fn new() -> Aes<'a> {
         Aes {
@@ -511,4 +513,3 @@ impl<'a> hil::symmetric_encryption::AES128CBC for Aes<'a> {
     }
 }
 
-pub static mut AES: Aes<'static> = Aes::new();
