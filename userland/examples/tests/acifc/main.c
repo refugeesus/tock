@@ -19,7 +19,7 @@ int main(void) {
   printf("ACIFC test application\n");
 
   // Set mode to which test you want
-  uint8_t mode = 1;
+  uint8_t mode = 0;
   uint8_t ac = 0;
 
   initialize_acifc();

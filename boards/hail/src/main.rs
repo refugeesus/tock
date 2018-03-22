@@ -456,7 +456,6 @@ pub unsafe fn reset_handler() {
         capsules::acifc::Acifc<'static, sam4l::acifc::Acifc>, 
         capsules::acifc::Acifc::new(&mut sam4l::acifc::ACIFC)
     );
-    sam4l::acifc::ACIFC.set_client();
 
     let hail = Hail {
         console: console,
