@@ -11,11 +11,10 @@
 
 // TODO:
 // - Implement window mode
-// - Implement for imix by adding two comparators
+// - Implement for imix by adding two additional comparators (ACA1 and ACB1)
 // - Implement handling of interrupts
-// - Implement other modes, User and peripheral triggered comparison
+// - Implement other modes, e.g. user and peripheral triggered comparison
 
-//use core::cell::Cell;
 use kernel::ReturnCode;
 use kernel::common::regs::{ReadOnly, ReadWrite, WriteOnly};
 use kernel::hil;
@@ -213,7 +212,6 @@ const BASE_ADDRESS: *mut AcifcRegisters = 0x40040000 as *mut AcifcRegisters;
 
 pub struct Acifc {
    registers: *mut AcifcRegisters,
-   //enabled: Cell<bool>,
    //client: Option<&'a acifc::Client>,
 }
 
@@ -279,13 +277,18 @@ impl Acifc {
 
 	fn comparison(&self, ac: usize){
 		let regs: &AcifcRegisters = unsafe { &*self.registers };
+		let result;
 		if ac == 0 {
-			let result = regs.sr.read(Status::ACCS0);
-			debug!("ACCS0: {}", result);
+			result = regs.sr.read(Status::ACCS0);
 		}		
 		else{
-			let result = regs.sr.read(Status::ACCS1);
-			debug!("ACCS1: {}", result);
+			result = regs.sr.read(Status::ACCS1);
+		}		
+		if result == 0 {
+			debug!("Result = {}, Vinp < Vinn", result);
+		}
+		else{
+			debug!("Result = {}, Vinp > Vinn", result);
 		}		
 	}
 
@@ -332,13 +335,12 @@ impl hil::acifc::Acifc for Acifc {
 	}		
 
 	fn comparison(&self, data: usize) -> ReturnCode {
-		// Only have two ACs, 0 and 1, so another number is inputted return an error
+		// Only have two ACs (on the hail), 0 and 1, so if another number is inputted return an error
 		if data > 1 {
 			return ReturnCode::EINVAL;
 		}
 		else{
 			self.comparison(data);
-			self.disable_clock();
 			return ReturnCode::SUCCESS;
 		}
 	}		

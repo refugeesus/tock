@@ -18,9 +18,12 @@ int main(void) {
   printf("*********************\n");
   printf("ACIFC test application\n");
 
-  // Set mode to which test you want
+  // Set mode according to which test you want
   uint8_t mode = 0;
-  uint8_t ac = 0;
+
+  // Choose your comparator. AC = 0 corresponds to PA06 and PA07, whereas ac = 1 corresponds to PB02 and PB03.
+  // On the hail these are the pins DAC and WKP, and AC2 and AC3 respectively.
+  uint8_t ac = 1;
 
   initialize_acifc();
 

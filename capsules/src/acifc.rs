@@ -1,6 +1,6 @@
-//! Provides an ACIFC interface for userspace.
+//! Provides userspace access to the ACIFC interface.
 //!
-//! Usage
+// !## Instantiation
 //! -----
 //!
 //! ```rust
@@ -8,6 +8,8 @@
 //! capsules::acifc::Acifc<'static, sam4l::acifc::Acifc>, 
 //! capsules::acifc::Acifc::new(&mut sam4l::acifc::ACIFC);
 //! ```
+//!
+//! Author: Danilo Verhaert <verhaert@stanford.edu>
 
 /// Syscall driver number.
 pub const DRIVER_NUM: usize = 0x07;
