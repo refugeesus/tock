@@ -246,12 +246,14 @@ impl Acifc {
     fn enable_clock(&self) {
         unsafe {
             pm::enable_clock(pm::Clock::PBA(pm::PBAClock::ACIFC));
+			//debug!("Clock enabled...");
         }
     }
 
     fn disable_clock(&self) {
         unsafe {
             pm::disable_clock(pm::Clock::PBA(pm::PBAClock::ACIFC));
+			//debug!("Clock disabled...");
         }
     }
 
@@ -291,10 +293,13 @@ impl Acifc {
 		let regs: &AcifcRegisters = unsafe { &*self.registers };
 		// Turn on ACIFC and set outputs to be bypassed by AC test register
 		regs.ctrl
-			.write(Control::ACTEST::SET);
+			.modify(Control::ACTEST::SET);
 		// Set output value of AC0 (test) to 1
 		regs.tr
 			.modify(Test::ACTEST0::SET);
+		// Set IER to 1, leading to IMR being set to 1
+		regs.ier
+			.write(Interrupt::ACINT0::SET);
 
 		// Test to check if bits are correctly enabled. If not, check if the clock is working correctly.
 		let enabled = regs.ctrl.read(Control::EN);
