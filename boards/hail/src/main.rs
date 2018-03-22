@@ -115,12 +115,15 @@ impl Platform for Hail {
 /// Helper function called during bring-up that configures multiplexed I/O.
 unsafe fn set_pin_primary_functions() {
     use sam4l::gpio::{PA, PB};
-    use sam4l::gpio::PeripheralFunction::{A, B};
+    use sam4l::gpio::PeripheralFunction::{A, B, E};
 
     PA[04].configure(Some(A)); // A0 - ADC0
     PA[05].configure(Some(A)); // A1 - ADC1
-    PA[06].configure(Some(A)); // DAC // ACIFC A - N
-    PA[07].configure(None); //... WKP - Wakeup // ACIFC A - P
+    // Note: PA06 is normally used for DAC, but now for ACIFC
+    PA[06].configure(Some(E)); // ACIFC A - N
+    PA[07].configure(Some(E)); // ACIFC A - P
+                               //  PA[06].configure(Some(E)); // DAC
+                               //  PA[07].configure(None); //... WKP - Wakeup
     PA[08].configure(Some(A)); // FTDI_RTS - USART0 RTS
     PA[09].configure(None); //... ACC_INT1 - FXOS8700CQ Interrupt 1
     PA[10].configure(None); //... unused
@@ -150,8 +153,10 @@ unsafe fn set_pin_primary_functions() {
 
     PB[00].configure(Some(A)); // SENSORS_SDA - TWIMS1 SDA
     PB[01].configure(Some(A)); // SENSORS_SCL - TWIMS1 SCL
-    PB[02].configure(Some(A)); // A2 - ADC3 // ACIFC B - N
-    PB[03].configure(Some(A)); // A3 - ADC4 // ACIFC B - P
+                                // PB[02].configure(Some(A)); // A2 - ADC3 
+                                // PB[03].configure(Some(A)); // A3 - ADC4 
+    PB[02].configure(Some(E)); // ACIFC B - N
+    PB[03].configure(Some(E)); // ACIFC B - P
     PB[04].configure(Some(A)); // A4 - ADC5
     PB[05].configure(Some(A)); // A5 - ADC6
     PB[06].configure(Some(A)); // NRF_CTS - USART3 RTS
