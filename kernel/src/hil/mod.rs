@@ -19,6 +19,7 @@ pub mod dac;
 pub mod nonvolatile_storage;
 pub mod usb;
 pub mod acifc;
+pub mod ble_advertising;
 
 /// Shared interface for configuring components.
 pub trait Controller {

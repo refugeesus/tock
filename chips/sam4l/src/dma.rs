@@ -220,10 +220,9 @@ impl DMAChannel {
     }
 
     pub fn enable(&self) {
-        unsafe {
-            pm::enable_clock(pm::Clock::HSB(pm::HSBClock::PDCA));
-            pm::enable_clock(pm::Clock::PBB(pm::PBBClock::PDCA));
-        }
+        pm::enable_clock(pm::Clock::HSB(pm::HSBClock::PDCA));
+        pm::enable_clock(pm::Clock::PBB(pm::PBBClock::PDCA));
+
         if !self.enabled.get() {
             unsafe {
                 let num_enabled = intrinsics::atomic_xadd(&mut NUM_ENABLED, 1);
@@ -255,6 +254,10 @@ impl DMAChannel {
             registers.cr.write(Control::TDIS::SET);
             self.enabled.set(false);
         }
+    }
+
+    pub fn is_enabled(&self) -> bool {
+        self.enabled.get()
     }
 
     pub fn handle_interrupt(&mut self) {

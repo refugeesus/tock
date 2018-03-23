@@ -133,7 +133,12 @@ impl<T: IntLike, R: RegisterLongName> ReadWrite<T, R> {
     }
 
     #[inline]
-    pub fn matches(&self, field: FieldValue<T, R>) -> bool {
+    pub fn matches_any(&self, field: FieldValue<T, R>) -> bool {
+        self.get() & field.mask != T::zero()
+    }
+
+    #[inline]
+    pub fn matches_all(&self, field: FieldValue<T, R>) -> bool {
         self.get() & field.mask == field.value
     }
 }
@@ -163,7 +168,12 @@ impl<T: IntLike, R: RegisterLongName> ReadOnly<T, R> {
     }
 
     #[inline]
-    pub fn matches(&self, field: FieldValue<T, R>) -> bool {
+    pub fn matches_any(&self, field: FieldValue<T, R>) -> bool {
+        self.get() & field.mask != T::zero()
+    }
+
+    #[inline]
+    pub fn matches_all(&self, field: FieldValue<T, R>) -> bool {
         self.get() & field.mask == field.value
     }
 }
@@ -258,6 +268,11 @@ impl<R: RegisterLongName> FieldValue<u8, R> {
             associated_register: PhantomData,
         }
     }
+
+    /// Get the raw bitmask represented by this FieldValue.
+    pub fn mask(self) -> u8 {
+        self.mask as u8
+    }
 }
 
 impl<R: RegisterLongName> From<FieldValue<u8, R>> for u8 {
@@ -289,6 +304,11 @@ impl<R: RegisterLongName> FieldValue<u32, R> {
             value: (value << shift) & (mask << shift),
             associated_register: PhantomData,
         }
+    }
+
+    /// Get the raw bitmask represented by this FieldValue.
+    pub fn mask(self) -> u32 {
+        self.mask as u32
     }
 }
 

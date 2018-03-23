@@ -6,7 +6,7 @@
 //!
 //! Most `unsafe` code is in this kernel crate.
 
-#![feature(asm, core_intrinsics, unique, nonzero)]
+#![feature(asm, core_intrinsics, unique, nonzero, ptr_internals)]
 #![feature(const_fn, const_cell_new, const_unsafe_cell_new, lang_items)]
 #![no_std]
 
@@ -38,10 +38,12 @@ mod syscall;
 mod platform;
 
 pub use callback::{AppId, Callback};
+pub use common::StaticRef;
 pub use driver::Driver;
 pub use grant::Grant;
 pub use mem::{AppPtr, AppSlice, Private, Shared};
 pub use platform::{mpu, systick, Chip, Platform};
+pub use platform::{ClockInterface, NoClockControl, NO_CLOCK_CONTROL};
 pub use platform::systick::SysTick;
 pub use process::{Process, State};
 pub use returncode::ReturnCode;
