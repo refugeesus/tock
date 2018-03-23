@@ -79,7 +79,7 @@ struct Imix {
     adc: &'static capsules::adc::Adc<'static, sam4l::adc::Adc>,
     led: &'static capsules::led::LED<'static, sam4l::gpio::GPIOPin>,
     button: &'static capsules::button::Button<'static, sam4l::gpio::GPIOPin>,
-    // acifc: &'static capsules::acifc::Acifc<'static, sam4l::acifc::Acifc>,
+    acifc: &'static capsules::acifc::Acifc<'static, sam4l::acifc::Acifc>,
     spi: &'static capsules::spi::Spi<'static, VirtualSpiMasterDevice<'static, sam4l::spi::SpiHw>>,
     ipc: kernel::ipc::IPC,
     ninedof: &'static capsules::ninedof::NineDof<'static>,
@@ -132,7 +132,7 @@ impl kernel::Platform for Imix {
             capsules::adc::DRIVER_NUM => f(Some(self.adc)),
             capsules::led::DRIVER_NUM => f(Some(self.led)),
             capsules::button::DRIVER_NUM => f(Some(self.button)),
-            // capsules::acifc::DRIVER_NUM => f(Some(self.acifc)),
+            capsules::acifc::DRIVER_NUM => f(Some(self.acifc)),
             capsules::ambient_light::DRIVER_NUM => f(Some(self.ambient_light)),
             capsules::temperature::DRIVER_NUM => f(Some(self.temp)),
             capsules::humidity::DRIVER_NUM => f(Some(self.humidity)),
@@ -193,16 +193,16 @@ unsafe fn set_pin_primary_functions() {
     PC[06].configure(Some(A)); // SCK         --  SPI CLK
     PC[07].configure(Some(B)); // RTS2 (BLE)  -- USART2_RTS
     PC[08].configure(Some(E)); // CTS2 (BLE)  -- USART2_CTS
-    PC[09].configure(None); //... NRF GPIO    -- GPIO
-    PC[10].configure(None); //... USER LED    -- GPIO
-    // PC[09].configure(Some(E)); //... NRF GPIO    -- ACAN1
-    // PC[10].configure(Some(E)); //... USER LED    -- ACAP1
+    //PC[09].configure(None); //... NRF GPIO    -- GPIO
+    //PC[10].configure(None); //... USER LED    -- GPIO
+    PC[09].configure(Some(E)); //... NRF GPIO    -- ACAN1
+    PC[10].configure(Some(E)); //... USER LED    -- ACAP1
     PC[11].configure(Some(B)); // RX2 (BLE)   -- USART2_RX
     PC[12].configure(Some(B)); // TX2 (BLE)   -- USART2_TX
-    PC[13].configure(None); //... ACC_INT1    -- GPIO
-    PC[14].configure(None); //... ACC_INT2    -- GPIO
-    //PC[13].configure(Some(E)); //... ACC_INT1    -- ACBN1
-    //PC[14].configure(Some(E)); //... ACC_INT2    -- ACBP1
+    //PC[13].configure(None); //... ACC_INT1    -- GPIO
+    //PC[14].configure(None); //... ACC_INT2    -- GPIO
+    PC[13].configure(Some(E)); //... ACC_INT1    -- ACBN1
+    PC[14].configure(Some(E)); //... ACC_INT2    -- ACBP1
     PC[16].configure(None); //... SENSE_PWR   --  GPIO pin
     PC[17].configure(None); //... NRF_PWR     --  GPIO pin
     PC[18].configure(None); //... RF233_PWR   --  GPIO pin
@@ -508,10 +508,10 @@ pub unsafe fn reset_handler() {
         capsules::crc::Crc::new(&mut sam4l::crccu::CRCCU, kernel::Grant::create())
     );
 
-    // let acifc = static_init!(
-    //     capsules::acifc::Acifc<'static, sam4l::acifc::Acifc>, 
-    //     capsules::acifc::Acifc::new(&mut sam4l::acifc::ACIFC)
-    // );
+    let acifc = static_init!(
+        capsules::acifc::Acifc<'static, sam4l::acifc::Acifc>, 
+        capsules::acifc::Acifc::new(&mut sam4l::acifc::ACIFC)
+    );
 
     rf233_spi.set_client(rf233);
     rf233.initialize(&mut RF233_BUF, &mut RF233_REG_WRITE, &mut RF233_REG_READ);
@@ -593,7 +593,7 @@ pub unsafe fn reset_handler() {
         adc: adc,
         led: led,
         button: button,
-        // acifc: acifc,
+        acifc: acifc,
         crc: crc,
         spi: spi_syscalls,
         ipc: kernel::ipc::IPC::new(),
