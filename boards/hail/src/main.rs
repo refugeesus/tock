@@ -119,7 +119,7 @@ unsafe fn set_pin_primary_functions() {
 
     PA[04].configure(Some(A)); // A0 - ADC0
     PA[05].configure(Some(A)); // A1 - ADC1
-    // Note: PA06 is normally used for DAC, but now for ACIFC
+                               // Note: PA06 is normally used for DAC, but now for ACIFC
     PA[06].configure(Some(E)); // ACIFC ACAN0
     PA[07].configure(Some(E)); // ACIFC ACAP0
                                //  PA[06].configure(Some(E)); // DAC
@@ -153,10 +153,10 @@ unsafe fn set_pin_primary_functions() {
 
     PB[00].configure(Some(A)); // SENSORS_SDA - TWIMS1 SDA
     PB[01].configure(Some(A)); // SENSORS_SCL - TWIMS1 SCL
-    PB[02].configure(Some(E)); // ACIFC ACBN0 
+    PB[02].configure(Some(E)); // ACIFC ACBN0
     PB[03].configure(Some(E)); // ACIFC ACBP0
-                                // PB[02].configure(Some(A)); // A2 - ADC3 
-                                // PB[03].configure(Some(A)); // A3 - ADC4 
+                               // PB[02].configure(Some(A)); // A2 - ADC3
+                               // PB[03].configure(Some(A)); // A3 - ADC4
     PB[04].configure(Some(A)); // A4 - ADC5
     PB[05].configure(Some(A)); // A5 - ADC6
     PB[06].configure(Some(A)); // NRF_CTS - USART3 RTS
@@ -453,7 +453,7 @@ pub unsafe fn reset_handler() {
 
     // ACIFC
     let acifc = static_init!(
-        capsules::acifc::Acifc<'static, sam4l::acifc::Acifc>, 
+        capsules::acifc::Acifc<'static, sam4l::acifc::Acifc>,
         capsules::acifc::Acifc::new(&mut sam4l::acifc::ACIFC)
     );
 

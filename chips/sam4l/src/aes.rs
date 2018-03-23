@@ -508,4 +508,3 @@ impl<'a> hil::symmetric_encryption::AES128CBC for Aes<'a> {
         self.set_mode(encrypting, ConfidentialityMode::CBC);
     }
 }
-

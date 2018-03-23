@@ -12,20 +12,20 @@ use returncode::ReturnCode;
 //     EitherEdge,
 // }
 
-pub trait Acifc{
+pub trait Acifc {
     // Initialize the ACIFC
     fn initialize_acifc(&self) -> ReturnCode;
 
-	// Enable the clock    
+    // Enable the clock
     fn enable_clock(&self);
 
-	// Disable the clock
+    // Disable the clock
     fn disable_clock(&self);
 
-    // Do a comparison of two inputs. Output will be 1 when Vinp>Vinn (Vin positive > Vin negative) 
+    // Do a comparison of two inputs. Output will be 1 when Vinp>Vinn (Vin positive > Vin negative)
     fn normal_comparison(&self, usize) -> u32;
 
-    // Do a comparison of three inputs. Output will be 1 when Vacbn_x+1 < Vcommon < Vacap_x! 
+    // Do a comparison of three inputs. Output will be 1 when Vacbn_x+1 < Vcommon < Vacap_x!
     fn window_comparison(&self, usize) -> u32;
 
     // Do a basic test to make sure everything is working

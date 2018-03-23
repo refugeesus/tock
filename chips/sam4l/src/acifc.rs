@@ -1,5 +1,5 @@
 //! Implementation of the GPIO controller.
-//! 
+//!
 //! See datasheet section "37. Analog Comparator Interface (ACIFC)".
 //!
 //! The Analog Comparator Interface (ACIFC) controls a number of Analog Comparators (AC) with identical behavior. Each Analog Comparator compares two voltages and gives a compare output depending on this comparison.
@@ -21,22 +21,22 @@ use pm;
 
 #[repr(C)]
 pub struct AcifcRegisters {
-		  ctrl: ReadWrite<u32, Control::Register>,
-	      sr: ReadOnly<u32, Status::Register>,
-	      _reserved0: [ReadOnly<u32>; 2],
-	      ier: WriteOnly<u32, Interrupt::Register>,
-	      idr: WriteOnly<u32, Interrupt::Register>,
-	      imr: ReadOnly<u32, Interrupt::Register>,
-	      isr: ReadOnly<u32, Interrupt::Register>,
-	      icr: WriteOnly<u32, Interrupt::Register>,
-	      tr: ReadWrite<u32, Test::Register>,
-	      _reserved1: [ReadOnly<u32>; 2],    
-	      parameter: ReadOnly<u32, Parameter::Register>,
-	      version: ReadOnly<u32>,
-	      _reserved2: [ReadOnly<u32>; 18],
-		  confw: [ReadWrite<u32, WindowConfiguration::Register>; 4],    
-	      _reserved3: [ReadOnly<u32>; 16],
-	      conf: [ReadWrite<u32, ACConfiguration::Register>; 8],
+    ctrl: ReadWrite<u32, Control::Register>,
+    sr: ReadOnly<u32, Status::Register>,
+    _reserved0: [ReadOnly<u32>; 2],
+    ier: WriteOnly<u32, Interrupt::Register>,
+    idr: WriteOnly<u32, Interrupt::Register>,
+    imr: ReadOnly<u32, Interrupt::Register>,
+    isr: ReadOnly<u32, Interrupt::Register>,
+    icr: WriteOnly<u32, Interrupt::Register>,
+    tr: ReadWrite<u32, Test::Register>,
+    _reserved1: [ReadOnly<u32>; 2],
+    parameter: ReadOnly<u32, Parameter::Register>,
+    version: ReadOnly<u32>,
+    _reserved2: [ReadOnly<u32>; 18],
+    confw: [ReadWrite<u32, WindowConfiguration::Register>; 4],
+    _reserved3: [ReadOnly<u32>; 16],
+    conf: [ReadWrite<u32, ACConfiguration::Register>; 8],
 }
 
 register_bitfields![u32,
@@ -125,7 +125,7 @@ register_bitfields![u32,
 		WIMPL1 17,
 		WIMPL0 16,
 		// If equal to one, analog comparator x is implemented.
-		ACIMPL7 7, 
+		ACIMPL7 7,
 		ACIMPL6 6,
 		ACIMPL5 5,
 		ACIMPL4 4,
@@ -181,7 +181,7 @@ register_bitfields![u32,
 		// Setting this to one will output peripheral event when ACOUT is zero.
 		EVENP OFFSET(17) NUMBITS(1) [],
 		// Setting this to one will output peripheral event when ACOUT is one.
-		EVENN OFFSET(16) NUMBITS(1) [], 
+		EVENN OFFSET(16) NUMBITS(1) [],
 		// Negative input select. 00: ACANx pint selected, others reserved.
 		INSELN OFFSET(8) NUMBITS(2) [],
 		// Choose between analog comparator mode.
@@ -210,20 +210,20 @@ register_bitfields![u32,
 const BASE_ADDRESS: *mut AcifcRegisters = 0x40040000 as *mut AcifcRegisters;
 
 pub struct Acifc {
-   registers: *mut AcifcRegisters,
-   //client: Option<&'a acifc::Client>,
+    registers: *mut AcifcRegisters,
+    //client: Option<&'a acifc::Client>,
 }
 
 pub static mut ACIFC: Acifc = Acifc::new();
 
 // Implement constructor for struct Acifc
 impl Acifc {
-	const fn new() -> Self {
-		Acifc {
-			registers: BASE_ADDRESS,
-			//client: Cell::new(None),
-		}
-	}
+    const fn new() -> Self {
+        Acifc {
+            registers: BASE_ADDRESS,
+            //client: Cell::new(None),
+        }
+    }
 
     fn enable_clock(&self) {
         unsafe {
@@ -237,128 +237,130 @@ impl Acifc {
         }
     }
 
-	pub fn set_client(&self) -> ReturnCode {
-		 	ReturnCode::SUCCESS
-	}
+    pub fn set_client(&self) -> ReturnCode {
+        ReturnCode::SUCCESS
+    }
 
-	// Functions which (should) enable interrupts for the window or startup modes
-	fn enable_interrupts(&self) {
-	    let regs: &AcifcRegisters = unsafe { &*self.registers };
-	    regs.ier.write(Interrupt::ACINT0::SET + Interrupt::ACINT1::SET);
-	    }
+    // Functions which (should) enable interrupts for the window or startup modes
+    fn enable_interrupts(&self) {
+        let regs: &AcifcRegisters = unsafe { &*self.registers };
+        regs.ier
+            .write(Interrupt::ACINT0::SET + Interrupt::ACINT1::SET);
+    }
 
-	fn disable_interrupts(&self) {
-	    let regs: &AcifcRegisters = unsafe { &*self.registers };
-	    regs.idr.write(Interrupt::ACINT0::SET + Interrupt::ACINT1::SET);
-	    }
-		
-	// Handling interrupts not yet implemented.
-	pub fn handle_interrupt(&mut self) {}
-	
-	fn initialize_acifc(&self){
-		let regs: &AcifcRegisters = unsafe { &*self.registers };
-		self.enable_clock();
-		regs.ctrl
-			.write(Control::EN::SET);
+    fn disable_interrupts(&self) {
+        let regs: &AcifcRegisters = unsafe { &*self.registers };
+        regs.idr
+            .write(Interrupt::ACINT0::SET + Interrupt::ACINT1::SET);
+    }
 
-		// Enable continuous measurement mode and always-on mode for AC0-3
-		regs.conf[0].write(ACConfiguration::MODE::ContinuousMeasurementMode + ACConfiguration::ALWAYSON::SET);
-		regs.conf[1].write(ACConfiguration::MODE::ContinuousMeasurementMode + ACConfiguration::ALWAYSON::SET);			
-		regs.conf[2].write(ACConfiguration::MODE::ContinuousMeasurementMode + ACConfiguration::ALWAYSON::SET);			
-		regs.conf[3].write(ACConfiguration::MODE::ContinuousMeasurementMode + ACConfiguration::ALWAYSON::SET);			
+    // Handling interrupts not yet implemented.
+    pub fn handle_interrupt(&mut self) {}
 
-		// Enable interrupts? Not yet used.
-		// self.enable_interrupts();
-	}
+    fn initialize_acifc(&self) {
+        let regs: &AcifcRegisters = unsafe { &*self.registers };
+        self.enable_clock();
+        regs.ctrl.write(Control::EN::SET);
 
-	fn normal_comparison(&self, ac: usize) -> u32{
-		let regs: &AcifcRegisters = unsafe { &*self.registers };
-		let result;
-		if ac == 0 {
-			result = regs.sr.read(Status::ACCS0);
-		}		
-		else if ac == 1 {
-			result = regs.sr.read(Status::ACCS1);
-		}	
-		else if ac == 2 {
-			result = regs.sr.read(Status::ACCS2);
-		}		
-		else {
-			result = regs.sr.read(Status::ACCS3);
-		}			
-		return result;
-	}
+        // Enable continuous measurement mode and always-on mode for AC0-3
+        regs.conf[0].write(
+            ACConfiguration::MODE::ContinuousMeasurementMode + ACConfiguration::ALWAYSON::SET,
+        );
+        regs.conf[1].write(
+            ACConfiguration::MODE::ContinuousMeasurementMode + ACConfiguration::ALWAYSON::SET,
+        );
+        regs.conf[2].write(
+            ACConfiguration::MODE::ContinuousMeasurementMode + ACConfiguration::ALWAYSON::SET,
+        );
+        regs.conf[3].write(
+            ACConfiguration::MODE::ContinuousMeasurementMode + ACConfiguration::ALWAYSON::SET,
+        );
 
-	fn window_comparison(&self, window: usize) -> u32{
-		let regs: &AcifcRegisters = unsafe { &*self.registers };
-		let result;
-		if window == 0 {
-			regs.confw[0].write(WindowConfiguration::WFEN::SET);
-			result = regs.sr.read(Status::WFCS0);
-		}		
-		else {
-			regs.confw[1].write(WindowConfiguration::WFEN::SET);
-			result = regs.sr.read(Status::WFCS1);
-		}		
-		return result;
-	}
+        // Enable interrupts? Not yet used.
+        // self.enable_interrupts();
+    }
 
-	fn test_output(&self){
-		let regs: &AcifcRegisters = unsafe { &*self.registers };
-		// Turn on ACIFC and set outputs to be bypassed by AC test register
-		// Note: Currently configured for Hail
-		regs.ctrl
-			.modify(Control::ACTEST::SET);
-		// Set output value of AC0 (test) to 1
-		regs.tr
-			.modify(Test::ACTEST0::SET);
-		// Set IER to 1, leading to IMR being set to 1
-		regs.ier
-			.write(Interrupt::ACINT0::SET);
+    fn normal_comparison(&self, ac: usize) -> u32 {
+        let regs: &AcifcRegisters = unsafe { &*self.registers };
+        let result;
+        if ac == 0 {
+            result = regs.sr.read(Status::ACCS0);
+        } else if ac == 1 {
+            result = regs.sr.read(Status::ACCS1);
+        } else if ac == 2 {
+            result = regs.sr.read(Status::ACCS2);
+        } else {
+            result = regs.sr.read(Status::ACCS3);
+        }
+        return result;
+    }
 
-		// Test to check if bits are correctly enabled. If not, check if the clock is working correctly.
-		let enabled = regs.ctrl.read(Control::EN);
-		let test0 = regs.tr.read(Test::ACTEST0);
-		let imrtest = regs.imr.read(Interrupt::ACINT0);
-		let conftest = regs.conf[0].read(ACConfiguration::ALWAYSON);
-		let acrdy0 = regs.sr.read(Status::ACRDY0);
+    fn window_comparison(&self, window: usize) -> u32 {
+        let regs: &AcifcRegisters = unsafe { &*self.registers };
+        let result;
+        if window == 0 {
+            regs.confw[0].write(WindowConfiguration::WFEN::SET);
+            result = regs.sr.read(Status::WFCS0);
+        } else {
+            regs.confw[1].write(WindowConfiguration::WFEN::SET);
+            result = regs.sr.read(Status::WFCS1);
+        }
+        return result;
+    }
 
-		debug!("Does the basic enabling work?: {}", enabled);
-		debug!("Does writing to a test register work? {}", test0);
-		debug!("IMR gets written after writing to IER? {}", imrtest);
-		debug!("Is Analog Comparator 0 ready? {}", acrdy0);
-		debug!("Does writing to Analog Comparator 0 work? {}", conftest);
-	}
+    fn test_output(&self) {
+        let regs: &AcifcRegisters = unsafe { &*self.registers };
+        // Turn on ACIFC and set outputs to be bypassed by AC test register
+        // Note: Currently configured for Hail
+        regs.ctrl.modify(Control::ACTEST::SET);
+        // Set output value of AC0 (test) to 1
+        regs.tr.modify(Test::ACTEST0::SET);
+        // Set IER to 1, leading to IMR being set to 1
+        regs.ier.write(Interrupt::ACINT0::SET);
+
+        // Test to check if bits are correctly enabled. If not, check if the clock is working correctly.
+        let enabled = regs.ctrl.read(Control::EN);
+        let test0 = regs.tr.read(Test::ACTEST0);
+        let imrtest = regs.imr.read(Interrupt::ACINT0);
+        let conftest = regs.conf[0].read(ACConfiguration::ALWAYSON);
+        let acrdy0 = regs.sr.read(Status::ACRDY0);
+
+        debug!("Does the basic enabling work?: {}", enabled);
+        debug!("Does writing to a test register work? {}", test0);
+        debug!("IMR gets written after writing to IER? {}", imrtest);
+        debug!("Is Analog Comparator 0 ready? {}", acrdy0);
+        debug!("Does writing to Analog Comparator 0 work? {}", conftest);
+    }
 }
 
-// Test output 
+// Test output
 impl hil::acifc::Acifc for Acifc {
-	fn initialize_acifc(&self) -> ReturnCode{
-		self.initialize_acifc();
-		return ReturnCode::SUCCESS;
-	}
+    fn initialize_acifc(&self) -> ReturnCode {
+        self.initialize_acifc();
+        return ReturnCode::SUCCESS;
+    }
 
-	fn enable_clock(&self) {
-		self.enable_clock();
-	}	
-	
-	fn disable_clock(&self) {
-		self.disable_clock();
-	}		
+    fn enable_clock(&self) {
+        self.enable_clock();
+    }
 
-	fn normal_comparison(&self, data: usize) -> u32 {
-		self.normal_comparison(data)
-	}		
+    fn disable_clock(&self) {
+        self.disable_clock();
+    }
 
-	fn window_comparison(&self, data: usize) -> u32 {
-		self.window_comparison(data)
-	}	
+    fn normal_comparison(&self, data: usize) -> u32 {
+        self.normal_comparison(data)
+    }
 
-	fn test_output(&self) -> ReturnCode {
-		self.test_output();
-		self.disable_clock();
-		return ReturnCode::SUCCESS;
-	}
+    fn window_comparison(&self, data: usize) -> u32 {
+        self.window_comparison(data)
+    }
+
+    fn test_output(&self) -> ReturnCode {
+        self.test_output();
+        self.disable_clock();
+        return ReturnCode::SUCCESS;
+    }
 }
 
 // impl hil::acifc::Client for Acifc{

@@ -134,7 +134,7 @@ impl Chip for Sam4l {
                         ADCIFE => adc::ADC0.handle_interrupt(),
                         DACC => dac::DAC.handle_interrupt(),
                         ACIFC => acifc::ACIFC.handle_interrupt(),
-                        
+
                         TRNG => trng::TRNG.handle_interrupt(),
                         AESA => aes::AES.handle_interrupt(),
                         _ => {

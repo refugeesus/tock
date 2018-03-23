@@ -155,13 +155,12 @@ impl hil::dac::DacChannel for Dac {
                 + Mode::TRGEN::InternalTrigger + Mode::DACEN::SET;
             regs.mr.write(mr);
 
-
-        regs.mr.modify(Mode::TRGSEL.val(1));
-        regs.wpmr.modify(WriteProtectMode::WPEN.val(1));
-        let a = regs.mr.read(Mode::TRGSEL);
-        let b = regs.wpmr.read(WriteProtectMode::WPEN);
-        debug!("Modifying as a word {}", a);
-        debug!("Modifying as a value {}", b);
+            regs.mr.modify(Mode::TRGSEL.val(1));
+            regs.wpmr.modify(WriteProtectMode::WPEN.val(1));
+            let a = regs.mr.read(Mode::TRGSEL);
+            let b = regs.wpmr.read(WriteProtectMode::WPEN);
+            debug!("Modifying as a word {}", a);
+            debug!("Modifying as a value {}", b);
         }
         ReturnCode::SUCCESS
     }

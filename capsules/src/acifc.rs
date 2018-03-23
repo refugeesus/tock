@@ -5,7 +5,7 @@
 //!
 //! ```rust
 //! let acifc = static_init!(
-//! capsules::acifc::Acifc<'static, sam4l::acifc::Acifc>, 
+//! capsules::acifc::Acifc<'static, sam4l::acifc::Acifc>,
 //! capsules::acifc::Acifc::new(&mut sam4l::acifc::ACIFC);
 //! ```
 //!
@@ -34,8 +34,10 @@ impl<'a, A: hil::acifc::Acifc> Driver for Acifc<'a, A> {
     ///
     /// - `0`: Driver check.
     /// - `1`: Initialize the ACIFC by activating the clock and the ACIFC itself.
-    /// - `2`: Perform a simple comparison. Input x chooses the desired comparator ACx (0 or 1 for hail, 0-3 for imix)
-    /// - `3`: Perform a window comparison. Input x chooses the desired window Windowx (0 for hail, 0 or 1 for imix)
+    /// - `2`: Perform a simple comparison.
+    ///Input x chooses the desired comparator ACx (0 or 1 for hail, 0-3 for imix)
+    /// - `3`: Perform a window comparison.
+    ///Input x chooses the desired window Windowx (0 for hail, 0 or 1 for imix)
     /// - `4`: Test the ACIFC for basic  functionality.
     fn command(&self, command_num: usize, data: usize, _: usize, _: AppId) -> ReturnCode {
         match command_num {
@@ -44,10 +46,12 @@ impl<'a, A: hil::acifc::Acifc> Driver for Acifc<'a, A> {
             1 => self.acifc.initialize_acifc(),
 
             2 => ReturnCode::SuccessWithValue {
-                value: self.acifc.normal_comparison(data) as usize},
+                value: self.acifc.normal_comparison(data) as usize,
+            },
 
             3 => ReturnCode::SuccessWithValue {
-                value: self.acifc.window_comparison(data) as usize},
+                value: self.acifc.window_comparison(data) as usize,
+            },
 
             4 => self.acifc.test_output(),
 

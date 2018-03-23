@@ -9,40 +9,36 @@ static void normal_comparison_polling(uint8_t ac) {
   uint count = 0;
   if (ac > 3) {
     printf("Please choose either ac 0 or 1 for hail, and 2 or 3 for imix.");
-  }
-  else{
-    while(1){
-    count++;
-    uint8_t result = normal_comparison(ac);
-    printf("Try %d. Result = %d.\n", count, result);
-    if (result == 1) {
-      printf("This implies Vinp > Vinn!\n\n");
-    }
-    else{
-      printf("This implies Vinp < Vinn!\n\n");
-    }
-    delay_ms(1000);
+  }else  {
+    while (1) {
+      count++;
+      uint8_t result = normal_comparison(ac);
+      printf("Try %d. Result = %d.\n", count, result);
+      if (result == 1) {
+        printf("This implies Vinp > Vinn!\n\n");
+      }else  {
+        printf("This implies Vinp < Vinn!\n\n");
+      }
+      delay_ms(1000);
     }
   }
 }
 
 static void window_comparison_polling(uint8_t window) {
   uint count = 0;
-  if (window > 1){
+  if (window > 1) {
     printf("Please choose window 0 for hail and 1 for imix.");
-  }
-  else{
-    while(1){
-    count++;
-    uint8_t result = window_comparison(window);
-    printf("Try %d. Result = %d.\n", count, result);
-    if (result == 1) {
-      printf("This implies Vacbn_x+1 < Vcommon < Vacap_x!\n\n");
-    }
-    else{
-      printf("This implies Vcommon < Vacan_x+1 or Vcommon > Vacap_x\n\n");
-    }
-    delay_ms(1000);
+  }else  {
+    while (1) {
+      count++;
+      uint8_t result = window_comparison(window);
+      printf("Try %d. Result = %d.\n", count, result);
+      if (result == 1) {
+        printf("This implies Vacbn_x+1 < Vcommon < Vacap_x!\n\n");
+      }else  {
+        printf("This implies Vcommon < Vacan_x+1 or Vcommon > Vacap_x\n\n");
+      }
+      delay_ms(1000);
     }
   }
 }
