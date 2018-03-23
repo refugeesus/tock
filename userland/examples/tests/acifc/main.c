@@ -4,13 +4,45 @@
 #include <timer.h>
 #include <tock.h>
 
-static void comparison_polling(uint8_t ac) {
+static void normal_comparison_polling(uint8_t ac) {
   uint count = 0;
-  while(1){
+  if (ac > 1) {
+    printf("Please choose either ac 0 or 1."); // Hail specific
+  }
+  else{
+    while(1){
     count++;
-    printf("Try %d. \n", count);
-    comparison(ac);
+    uint8_t result = normal_comparison(ac);
+    printf("Try %d. Result = %d.\n", count, result);
+    if (result == 1) {
+      printf("This implies Vinp > Vinn!\n\n");
+    }
+    else{
+      printf("This implies Vinp < Vinn!\n\n");
+    }
     delay_ms(1000);
+    }
+  }
+}
+
+static void window_comparison_polling(uint8_t window) {
+  uint count = 0;
+  if (window > 0){
+    printf("Please choose window 0."); // Hail specific
+  }
+  else{
+    while(1){
+    count++;
+    uint8_t result = window_comparison(window);
+    printf("Try %d. Result = %d.\n", count, result);
+    if (result == 1) {
+      printf("This implies Vacbn_x+1 < Vcommon < Vacap_x!\n\n");
+    }
+    else{
+      printf("This implies Vcommon < Vacan_x+1 or Vcommon > Vacap_x\n\n");
+    }
+    delay_ms(1000);
+    }
   }
 }
 
@@ -18,19 +50,30 @@ int main(void) {
   printf("*********************\n");
   printf("ACIFC test application\n");
 
-  // Set mode according to which test you want
-  uint8_t mode = 0;
+  // Set mode according to which implementation you want
+  uint8_t mode = 1;
 
   // Choose your comparator. AC = 0 corresponds to PA06 and PA07, whereas ac = 1 corresponds to PB02 and PB03.
   // On the hail these are the pins DAC and WKP, and AC2 and AC3 respectively.
   uint8_t ac = 1;
 
+  // Choose your window. For the hail, there is only one window. For imix, there are two (0 and 1).
+  uint8_t window = 0;
+
+  // Initialize the ACIFC by enabling some basic necessities
   initialize_acifc();
 
   switch (mode) {
-    case 0: comparison_polling(ac); break;
-    case 1: test_output(); break;
+    // Poll for a normal comparison every second and print the result
+    case 0: normal_comparison_polling(ac); break;
+
+    // Poll for a window comparison every second and print the result
+    case 1: window_comparison_polling(window); break;
+
+    // Function testing basic functionality
+    case 2: test_output(); break;
   }
   printf("*********************\n");
   return 0;
 }
+

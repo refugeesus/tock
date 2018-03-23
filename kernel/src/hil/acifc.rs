@@ -21,8 +21,12 @@ pub trait Acifc{
 
 	// Disable the clock
     fn disable_clock(&self);
-    // Do a comparison of two inputs. Output will be 1 when V1>V2
-    fn comparison(&self, usize) -> ReturnCode;
+
+    // Do a comparison of two inputs. Output will be 1 when Vinp>Vinn (Vin positive > Vin negative) 
+    fn normal_comparison(&self, usize) -> u32;
+
+    // Do a comparison of three inputs. Output will be 1 when Vacbn_x+1 < Vcommon < Vacap_x! 
+    fn window_comparison(&self, usize) -> u32;
 
     // Do a basic test to make sure everything is working
     fn test_output(&self) -> ReturnCode;

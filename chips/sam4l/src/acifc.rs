@@ -226,32 +226,15 @@ impl Acifc {
 		}
 	}
 
-	fn initialize_acifc(&self){
-		let regs: &AcifcRegisters = unsafe { &*self.registers };
-		self.enable_clock();
-		regs.ctrl
-			.write(Control::EN::SET);
-		// Enable continuous measurement mode and always-on mode for AC0
-		regs.conf[0]
-			.write(ACConfiguration::MODE::ContinuousMeasurementMode + ACConfiguration::ALWAYSON::SET);
-		// Enable continuous measurement mode and always-on mode for AC1
-		regs.conf[1]
-			.write(ACConfiguration::MODE::ContinuousMeasurementMode + ACConfiguration::ALWAYSON::SET);			
-		// Enable interrupts? Not yet used.
-		// self.enable_interrupts();
-	}
-
     fn enable_clock(&self) {
         unsafe {
             pm::enable_clock(pm::Clock::PBA(pm::PBAClock::ACIFC));
-			//debug!("Clock enabled...");
         }
     }
 
     fn disable_clock(&self) {
         unsafe {
             pm::disable_clock(pm::Clock::PBA(pm::PBAClock::ACIFC));
-			//debug!("Clock disabled...");
         }
     }
 
@@ -262,20 +245,35 @@ impl Acifc {
 	// Functions which (should) enable interrupts for the window or startup modes
 	fn enable_interrupts(&self) {
 	    let regs: &AcifcRegisters = unsafe { &*self.registers };
-	    regs.ier
-	        .write(Interrupt::ACINT0::SET + Interrupt::ACINT1::SET);
+	    regs.ier.write(Interrupt::ACINT0::SET + Interrupt::ACINT1::SET);
 	    }
 
 	fn disable_interrupts(&self) {
 	    let regs: &AcifcRegisters = unsafe { &*self.registers };
-	    regs.idr
-	        .write(Interrupt::ACINT0::SET + Interrupt::ACINT1::SET);
+	    regs.idr.write(Interrupt::ACINT0::SET + Interrupt::ACINT1::SET);
 	    }
 		
 	// Handling interrupts not yet implemented.
 	pub fn handle_interrupt(&mut self) {}
+	
+	fn initialize_acifc(&self){
+		let regs: &AcifcRegisters = unsafe { &*self.registers };
+		self.enable_clock();
+		regs.ctrl
+			.write(Control::EN::SET);
 
-	fn comparison(&self, ac: usize){
+		// Enable continuous measurement mode and always-on mode for AC0
+		regs.conf[0]
+			.write(ACConfiguration::MODE::ContinuousMeasurementMode + ACConfiguration::ALWAYSON::SET);
+		// Enable continuous measurement mode and always-on mode for AC1
+		regs.conf[1]
+			.write(ACConfiguration::MODE::ContinuousMeasurementMode + ACConfiguration::ALWAYSON::SET);			
+
+		// Enable interrupts? Not yet used.
+		// self.enable_interrupts();
+	}
+	
+	fn normal_comparison(&self, ac: usize) -> u32{
 		let regs: &AcifcRegisters = unsafe { &*self.registers };
 		let result;
 		if ac == 0 {
@@ -284,12 +282,21 @@ impl Acifc {
 		else{
 			result = regs.sr.read(Status::ACCS1);
 		}		
-		if result == 0 {
-			debug!("Result = {}, Vinp < Vinn", result);
-		}
-		else{
-			debug!("Result = {}, Vinp > Vinn", result);
+		return result;
+	}
+
+	fn window_comparison(&self, window: usize) -> u32{
+		let regs: &AcifcRegisters = unsafe { &*self.registers };
+		let result;
+		if window == 0 {
+			regs.confw[0].write(WindowConfiguration::WFEN::SET);
+			result = regs.sr.read(Status::WFCS0);
 		}		
+		//else{
+		//	regs.confw[1].write(WindowConfiguration::WFEN::SET);
+		//	result = regs.sr.read(Status::WFCS1);
+		//}		
+		return result;
 	}
 
 	fn test_output(&self){
@@ -309,13 +316,13 @@ impl Acifc {
 		let test0 = regs.tr.read(Test::ACTEST0);
 		let imrtest = regs.imr.read(Interrupt::ACINT0);
 		let conftest = regs.conf[0].read(ACConfiguration::ALWAYSON);
-		let comp0 = regs.parameter.read(Parameter::ACIMPL0);
+		let acrdy0 = regs.sr.read(Status::ACRDY0);
 
 		debug!("Does the basic enabling work?: {}", enabled);
 		debug!("Does writing to a test register work? {}", test0);
-		debug!("IMR gets written after IER? {}", imrtest);
-		debug!("Does writing to a specific ACx work? {}", conftest);
-		debug!("Is Analog Comparator 0 implemented? {}", comp0);
+		debug!("IMR gets written after writing to IER? {}", imrtest);
+		debug!("Is Analog Comparator 0 ready? {}", acrdy0);
+		debug!("Does writing to Analog Comparator 0 work? {}", conftest);
 	}
 }
 
@@ -334,16 +341,13 @@ impl hil::acifc::Acifc for Acifc {
 		self.disable_clock();
 	}		
 
-	fn comparison(&self, data: usize) -> ReturnCode {
-		// Only have two ACs (on the hail), 0 and 1, so if another number is inputted return an error
-		if data > 1 {
-			return ReturnCode::EINVAL;
-		}
-		else{
-			self.comparison(data);
-			return ReturnCode::SUCCESS;
-		}
+	fn normal_comparison(&self, data: usize) -> u32 {
+		self.normal_comparison(data)
 	}		
+
+	fn window_comparison(&self, data: usize) -> u32 {
+		self.window_comparison(data)
+	}	
 
 	fn test_output(&self) -> ReturnCode {
 		self.test_output();
