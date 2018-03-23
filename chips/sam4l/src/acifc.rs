@@ -11,7 +11,6 @@
 //! Author: Danilo Verhaert <verhaert@cs.stanford.edu>
 
 // TODO:
-// - Implement for imix by adding two additional comparators ACA1 and ACB1 (5 minutes of work)
 // - Implement handling of interrupts
 // - Implement other modes, e.g. user and peripheral triggered comparison
 
@@ -262,12 +261,11 @@ impl Acifc {
 		regs.ctrl
 			.write(Control::EN::SET);
 
-		// Enable continuous measurement mode and always-on mode for AC0
-		regs.conf[0]
-			.write(ACConfiguration::MODE::ContinuousMeasurementMode + ACConfiguration::ALWAYSON::SET);
-		// Enable continuous measurement mode and always-on mode for AC1
-		regs.conf[1]
-			.write(ACConfiguration::MODE::ContinuousMeasurementMode + ACConfiguration::ALWAYSON::SET);			
+		// Enable continuous measurement mode and always-on mode for AC0-3
+		regs.conf[0].write(ACConfiguration::MODE::ContinuousMeasurementMode + ACConfiguration::ALWAYSON::SET);
+		regs.conf[1].write(ACConfiguration::MODE::ContinuousMeasurementMode + ACConfiguration::ALWAYSON::SET);			
+		regs.conf[2].write(ACConfiguration::MODE::ContinuousMeasurementMode + ACConfiguration::ALWAYSON::SET);			
+		regs.conf[3].write(ACConfiguration::MODE::ContinuousMeasurementMode + ACConfiguration::ALWAYSON::SET);			
 
 		// Enable interrupts? Not yet used.
 		// self.enable_interrupts();
@@ -308,6 +306,7 @@ impl Acifc {
 	fn test_output(&self){
 		let regs: &AcifcRegisters = unsafe { &*self.registers };
 		// Turn on ACIFC and set outputs to be bypassed by AC test register
+		// Note: Currently configured for Hail
 		regs.ctrl
 			.modify(Control::ACTEST::SET);
 		// Set output value of AC0 (test) to 1
