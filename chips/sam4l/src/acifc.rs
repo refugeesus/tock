@@ -5,13 +5,13 @@
 //! The Analog Comparator Interface (ACIFC) controls a number of Analog Comparators (AC) with identical behavior. Each Analog Comparator compares two voltages and gives a compare output depending on this comparison.
 //! A specific AC is referred to as ACx where x is any number from 0 to n and n is the index of last AC module. The ACIFC on the SAM4L supports a total of 8 ACs (and therefore 4 possible ACWs).
 //! However, note that the 64 pin SAM4L (e.g. on the Hail) has 2 ACs (ACA0 and ACB0), and the 100 pin SAM4L (e.g. on the Imix) has 4 ACs (ACA0, ACB0, ACA1, ACB1). Currently, no version of the SAM4L exists with all the 8 ACs implemented.
+//! Therefore a lot of the defined bitfields remaind unused, but are initialized for a possible future scenario.
 //! The ACIFC can be configured in normal mode using each comparator independently or in window mode using defined comparator pairs (ACx and ACx+1) to observe a window.
 //!
 //! Author: Danilo Verhaert <verhaert@cs.stanford.edu>
 
 // TODO:
-// - Implement window mode
-// - Implement for imix by adding two additional comparators (ACA1 and ACB1)
+// - Implement for imix by adding two additional comparators ACA1 and ACB1 (5 minutes of work)
 // - Implement handling of interrupts
 // - Implement other modes, e.g. user and peripheral triggered comparison
 
@@ -272,16 +272,22 @@ impl Acifc {
 		// Enable interrupts? Not yet used.
 		// self.enable_interrupts();
 	}
-	
+
 	fn normal_comparison(&self, ac: usize) -> u32{
 		let regs: &AcifcRegisters = unsafe { &*self.registers };
 		let result;
 		if ac == 0 {
 			result = regs.sr.read(Status::ACCS0);
 		}		
-		else{
+		else if ac == 1 {
 			result = regs.sr.read(Status::ACCS1);
+		}	
+		else if ac == 2 {
+			result = regs.sr.read(Status::ACCS2);
 		}		
+		else {
+			result = regs.sr.read(Status::ACCS3);
+		}			
 		return result;
 	}
 
@@ -292,10 +298,10 @@ impl Acifc {
 			regs.confw[0].write(WindowConfiguration::WFEN::SET);
 			result = regs.sr.read(Status::WFCS0);
 		}		
-		//else{
-		//	regs.confw[1].write(WindowConfiguration::WFEN::SET);
-		//	result = regs.sr.read(Status::WFCS1);
-		//}		
+		else {
+			regs.confw[1].write(WindowConfiguration::WFEN::SET);
+			result = regs.sr.read(Status::WFCS1);
+		}		
 		return result;
 	}
 

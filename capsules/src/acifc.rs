@@ -9,7 +9,7 @@
 //! capsules::acifc::Acifc::new(&mut sam4l::acifc::ACIFC);
 //! ```
 //!
-//! Author: Danilo Verhaert <verhaert@stanford.edu>
+//! Author: Danilo Verhaert <verhaert@cs.stanford.edu>
 
 /// Syscall driver number.
 pub const DRIVER_NUM: usize = 0x07;
@@ -28,14 +28,14 @@ impl<'a, A: hil::acifc::Acifc> Acifc<'a, A> {
 }
 
 impl<'a, A: hil::acifc::Acifc> Driver for Acifc<'a, A> {
-    /// Control the ACIFC.
+    /// Creat an `ACIFC` driver
     ///
     /// ### `command_num`
     ///
     /// - `0`: Driver check.
     /// - `1`: Initialize the ACIFC by activating the clock and the ACIFC itself.
-    /// - `2`: Perform a simple comparison. Input is the desired comparator (0 or 1 for hail, 0-3 for imix)
-    /// - `3`: Perform a window comparison. Input is the desired window (0 for hail, 0 or 1 for imix)
+    /// - `2`: Perform a simple comparison. Input x chooses the desired comparator ACx (0 or 1 for hail, 0-3 for imix)
+    /// - `3`: Perform a window comparison. Input x chooses the desired window Windowx (0 for hail, 0 or 1 for imix)
     /// - `4`: Test the ACIFC for basic  functionality.
     fn command(&self, command_num: usize, data: usize, _: usize, _: AppId) -> ReturnCode {
         match command_num {

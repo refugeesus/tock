@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <stdlib.h>
 
 #include <acifc.h>
 #include <timer.h>
@@ -49,6 +50,11 @@ static void window_comparison_polling(uint8_t window) {
 int main(void) {
   printf("*********************\n");
   printf("ACIFC test application\n");
+
+  if (!acifc_exists()) {
+    printf("ACIFC driver does not exist\n");
+    exit(1);
+  }
 
   // Set mode according to which implementation you want
   uint8_t mode = 1;

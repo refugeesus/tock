@@ -1,6 +1,6 @@
 //! Interface for direct control of ACIFC
 //!
-//! Author: Danilo Verhaert <verhaert@stanford.edu>
+//! Author: Danilo Verhaert <verhaert@cs.stanford.edu>
 
 use returncode::ReturnCode;
 

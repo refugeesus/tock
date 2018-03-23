@@ -8,6 +8,9 @@ extern "C" {
 
 #define DRIVER_NUM_ACIFC 0x7
 
+// Does the driver exist?
+int acifc_exists(void);
+
 // Initialize and enable the DAC.
 int initialize_acifc(void);
 

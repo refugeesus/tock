@@ -1,6 +1,10 @@
 #include "acifc.h"
 #include "tock.h"
 
+int acifc_exists(void) {
+  return command(DRIVER_NUM_ACIFC, 0, 0, 0) >= 0;
+}
+
 int initialize_acifc(void) {
   return command(DRIVER_NUM_ACIFC, 1, 0, 0);
 }
