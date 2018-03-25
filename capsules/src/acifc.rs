@@ -1,6 +1,6 @@
 //! Provides userspace access to the ACIFC interface.
 //!
-// !## Instantiation
+//! ## Instantiation
 //! -----
 //!
 //! ```rust

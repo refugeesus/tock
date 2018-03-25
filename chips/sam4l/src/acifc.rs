@@ -14,7 +14,7 @@
 // - Implement handling of interrupts
 // - Implement other modes, e.g. user and peripheral triggered comparison
 
-use kernel::ReturnCode;
+use kernel::{ReturnCode, StaticRef};
 use kernel::common::regs::{ReadOnly, ReadWrite, WriteOnly};
 use kernel::hil;
 use pm;
@@ -41,25 +41,25 @@ pub struct AcifcRegisters {
 
 register_bitfields![u32,
 	Control [
-		// Analog comparator test mode. Equal to 1 means AC outputs will be bypassed with values in AC test register.
+		/// Analog comparator test mode. Equal to 1 means AC outputs will be bypassed with values in AC test register.
 		ACTEST 7,
-		// This bit is set when an enabled peripheral event is received (called by EVENTEN), and starts a single comparison.
+		/// This bit is set when an enabled peripheral event is received (called by EVENTEN), and starts a single comparison.
 		ESTART 5,
-		// This bit can be set by the user and starts a single comparison.
+		/// This bit can be set by the user and starts a single comparison.
 		USTART 4,
-		// This bit sets ESTART to 1 on receiving a peripheral event from another hardware module.
+		/// This bit sets ESTART to 1 on receiving a peripheral event from another hardware module.
 		EVENTEN 1,
-		// Enables or disables the ACIFC.
+		/// Enables or disables the ACIFC.
 		EN 0
 	],
 
 	Status [
-		// This bit represents an output for the window mode, and reads one when the common input voltage is inside the window of the two non-common inputs.
+		/// This bit represents an output for the window mode, and reads one when the common input voltage is inside the window of the two non-common inputs.
 		WFCS3 27,
 		WFCS2 26,
 		WFCS1 25,
 		WFCS0 24,
-		// ACRDY is set when the AC output is ready. ACCS is set when the positive input voltage V_{INP} is greater than the negative input voltage V_{INN}.
+		/// ACRDY is set when the AC output is ready. ACCS is set when the positive input voltage V_{INP} is greater than the negative input voltage V_{INN}.
 		ACRDY7 15,
 		ACCS7 14,
 		ACRDY6 13,
@@ -79,11 +79,11 @@ register_bitfields![u32,
 	],
 
 	Interrupt [
-		// IER: Writing a one to a bit in this register will set the corresponding bit in IMR.
-		// IDR: Writing a one to a bit in this register will clear the corresponding bit in IMR.
-		// IMR: Writing a one in any of these bits will enable the corresponding interrupt.
-		// ISR: WFINTx shows if a window mode interrupt is pending. SUTINTx shows if a startup time interrupt is pending. ACINTx shows if a normal mode interrupt is pending.
-		// ICR: Writing a one to a bit in this register will clear the corresponding bit in ISR and the corresponding interrupt request.
+		/// IER: Writing a one to a bit in this register will set the corresponding bit in IMR.
+		/// IDR: Writing a one to a bit in this register will clear the corresponding bit in IMR.
+		/// IMR: Writing a one in any of these bits will enable the corresponding interrupt.
+		/// ISR: WFINTx shows if a window mode interrupt is pending. SUTINTx shows if a startup time interrupt is pending. ACINTx shows if a normal mode interrupt is pending.
+		/// ICR: Writing a one to a bit in this register will clear the corresponding bit in ISR and the corresponding interrupt request.
 		WFINT3 27,
 		WFINT2 26,
 		WFINT1 25,
@@ -107,7 +107,7 @@ register_bitfields![u32,
 	],
 
 	Test [
-		// If equal to one, overrides ACx output with the value of ACTESTx.
+		/// If equal to one, overrides ACx output with the value of ACTESTx.
 		ACTEST7 7,
 		ACTEST6 6,
 		ACTEST5 5,
@@ -119,12 +119,12 @@ register_bitfields![u32,
 	],
 
 	Parameter [
-		// If equal to one, window mode x is implemented.
+		/// If equal to one, window mode x is implemented.
 		WIMPL3 19,
 		WIMPL2 18,
 		WIMPL1 17,
 		WIMPL0 16,
-		// If equal to one, analog comparator x is implemented.
+		/// If equal to one, analog comparator x is implemented.
 		ACIMPL7 7,
 		ACIMPL6 6,
 		ACIMPL5 5,
@@ -136,11 +136,11 @@ register_bitfields![u32,
 		],
 
 	WindowConfiguration [
-		// If equal to one, window mode is enabled.
+		/// If equal to one, window mode is enabled.
 		WFEN OFFSET(16) NUMBITS(1) [],
-		// If equal to one, peripheral event from ACWOUT is enabled.
+		/// If equal to one, peripheral event from ACWOUT is enabled.
 		WEVEN OFFSET(11) NUMBITS(1) [],
-		// Peripheral Event Source Selection for Window Mode
+		/// Peripheral Event Source Selection for Window Mode
 		WEVSRC OFFSET (8) NUMBITS(3) [
 			AcwoutRisingEdge = 0,
 			AcwoutFallingEdge = 1,
@@ -149,139 +149,132 @@ register_bitfields![u32,
 			OutsideWindow = 4,
 			MeasureDone = 5
 		],
-			// Window Mode Interrupt Settings
+			/// Window Mode Interrupt Settings
 		WIS OFFSET(0) NUMBITS (3)[
-			// Window interrupt as soon as the common input voltage is inside the window
+			/// Window interrupt as soon as the common input voltage is inside the window
 			InterruptInsideWindow = 0,
-			// Window interrupt as soon as the common input voltage is outside the window
+			/// Window interrupt as soon as the common input voltage is outside the window
 			InterruptOutsideWindow = 1,
-			// Window interrupt on toggle of ACWOUT
+			/// Window interrupt on toggle of ACWOUT
 			InterruptToggleAcwout = 2,
-			// Window interrupt when evaluation of common input voltage is done
+			/// Window interrupt when evaluation of common input voltage is done
 			InterruptAfterEvaluation = 3,
-			// Window interrupt when the common input voltage enters the window (i.e., rising-edge of ACWOUT)
+			/// Window interrupt when the common input voltage enters the window (i.e., rising-edge of ACWOUT)
 			InterruptEnterWindow = 4,
-			// Window interrupt when the common input voltage leaves the window (i.e., falling-edge of ACWOUT)
+			/// Window interrupt when the common input voltage leaves the window (i.e., falling-edge of ACWOUT)
 			InterruptLeaveWindow = 5
 	]
 	],
 
 	ACConfiguration [
-		// If equal to one, AC is always enabled. 
+		/// If equal to one, AC is always enabled. 
 		ALWAYSON OFFSET(27) NUMBITS(1) [],
-		// 0: Low-power mode. 1: Fastm ode.
+		/// 0: Low-power mode. 1: Fastm ode.
 		FAST OFFSET(26) NUMBITS(1) [],
-		// Hysteresis voltage value: 0/25/50/75 mV
+		/// Hysteresis voltage value: 0/25/50/75 mV
 		HYS OFFSET(24) NUMBITS(2) [
 			HysteresisVoltage0mV = 0,
 			HysteresisVoltage25mV = 1,
 			HysteresisVoltage50mV = 2,
 			HysteresisVoltage75mV = 3
 		],
-		// Setting this to one will output peripheral event when ACOUT is zero.
+		/// Setting this to one will output peripheral event when ACOUT is zero.
 		EVENP OFFSET(17) NUMBITS(1) [],
-		// Setting this to one will output peripheral event when ACOUT is one.
+		/// Setting this to one will output peripheral event when ACOUT is one.
 		EVENN OFFSET(16) NUMBITS(1) [],
-		// Negative input select. 00: ACANx pint selected, others reserved.
+		/// Negative input select. 00: ACANx pint selected, others reserved.
 		INSELN OFFSET(8) NUMBITS(2) [],
-		// Choose between analog comparator mode.
+		/// Choose between analog comparator mode.
 		MODE OFFSET(4) NUMBITS(2) [
 			Off = 0,
 			ContinuousMeasurementMode = 1,
-			// User Triggered Single Measurement Mode
+			/// User Triggered Single Measurement Mode
 			UserMode = 2,
-			// Peripheral Event Single Measurement Mode
+			/// Peripheral Event Single Measurement Mode
 			PeripheralMode = 3
 		],
-		// Interrupt settings
+		/// Interrupt settings
 		IS OFFSET(0) NUMBITS(2) [
-			// When Vinp > Vinn
+			/// When Vinp > Vinn
 			WhenVinpGtVinn = 0,
-			// When Vinp < Vinn
+			/// When Vinp < Vinn
 			WhenVinpLtVinn = 1,
-			// On toggle of ACOUT
+			/// On toggle of ACOUT
 			OnToggleOfACOUT = 2,
-			// When comparison of Vinp and Vinn is done
+			/// When comparison of Vinp and Vinn is done
 			WhenComparisonDone = 3
 		]
 	]
 ];
 
 const BASE_ADDRESS: *mut AcifcRegisters = 0x40040000 as *mut AcifcRegisters;
+const ACIFC_REGS: StaticRef<AcifcRegisters> = unsafe{StaticRef::new(BASE_ADDRESS as *const AcifcRegisters)};
 
 pub struct Acifc {
-    registers: *mut AcifcRegisters,
+    //registers: *mut AcifcRegisters,
     //client: Option<&'a acifc::Client>,
 }
 
 pub static mut ACIFC: Acifc = Acifc::new();
 
-// Implement constructor for struct Acifc
+/// Implement constructor for struct Acifc
 impl Acifc {
     const fn new() -> Self {
         Acifc {
-            registers: BASE_ADDRESS,
+            //registers: BASE_ADDRESS,
             //client: Cell::new(None),
         }
     }
 
     fn enable_clock(&self) {
-        unsafe {
             pm::enable_clock(pm::Clock::PBA(pm::PBAClock::ACIFC));
-        }
     }
 
     fn disable_clock(&self) {
-        unsafe {
             pm::disable_clock(pm::Clock::PBA(pm::PBAClock::ACIFC));
-        }
     }
 
     pub fn set_client(&self) -> ReturnCode {
         ReturnCode::SUCCESS
     }
 
-    // Functions which (should) enable interrupts for the window or startup modes
-    fn enable_interrupts(&self) {
-        let regs: &AcifcRegisters = unsafe { &*self.registers };
-        regs.ier
-            .write(Interrupt::ACINT0::SET + Interrupt::ACINT1::SET);
-    }
+    /// Functions which (should) enable interrupts for the window or startup modes
+    //fn enable_interrupts(&self) {
+	// 	unimplemented!("ACIFC enabling interrupts");
+    //     let regs = ACIFC_REGS;
+    //     regs.ier
+    //         .write(Interrupt::ACINT0::SET + Interrupt::ACINT1::SET);
+    // }
 
-    fn disable_interrupts(&self) {
-        let regs: &AcifcRegisters = unsafe { &*self.registers };
-        regs.idr
-            .write(Interrupt::ACINT0::SET + Interrupt::ACINT1::SET);
-    }
+    //fn disable_interrupts(&self) {
+	// 	unimplemented!("ACIFC enabling interrupts");
+    //     let regs = ACIFC_REGS;
+    //     regs.idr
+    //         .write(Interrupt::ACINT0::SET + Interrupt::ACINT1::SET);
+    // }
 
-    // Handling interrupts not yet implemented.
-    pub fn handle_interrupt(&mut self) {}
+    /// Handling interrupts not yet implemented.
+    pub fn handle_interrupt(&mut self) {
+		unimplemented!("ACIFC handling of interrupts");
+	}
 
     fn initialize_acifc(&self) {
-        let regs: &AcifcRegisters = unsafe { &*self.registers };
+        let regs = ACIFC_REGS;
         self.enable_clock();
         regs.ctrl.write(Control::EN::SET);
 
         // Enable continuous measurement mode and always-on mode for AC0-3
-        regs.conf[0].write(
-            ACConfiguration::MODE::ContinuousMeasurementMode + ACConfiguration::ALWAYSON::SET,
-        );
-        regs.conf[1].write(
-            ACConfiguration::MODE::ContinuousMeasurementMode + ACConfiguration::ALWAYSON::SET,
-        );
-        regs.conf[2].write(
-            ACConfiguration::MODE::ContinuousMeasurementMode + ACConfiguration::ALWAYSON::SET,
-        );
-        regs.conf[3].write(
-            ACConfiguration::MODE::ContinuousMeasurementMode + ACConfiguration::ALWAYSON::SET,
-        );
+        regs.conf[0].write(ACConfiguration::MODE::ContinuousMeasurementMode + ACConfiguration::ALWAYSON::SET);
+        regs.conf[1].write(ACConfiguration::MODE::ContinuousMeasurementMode + ACConfiguration::ALWAYSON::SET);
+        regs.conf[2].write(ACConfiguration::MODE::ContinuousMeasurementMode + ACConfiguration::ALWAYSON::SET);
+        regs.conf[3].write(ACConfiguration::MODE::ContinuousMeasurementMode + ACConfiguration::ALWAYSON::SET);
 
         // Enable interrupts? Not yet used.
         // self.enable_interrupts();
     }
 
     fn normal_comparison(&self, ac: usize) -> u32 {
-        let regs: &AcifcRegisters = unsafe { &*self.registers };
+        let regs = ACIFC_REGS;
         let result;
         if ac == 0 {
             result = regs.sr.read(Status::ACCS0);
@@ -296,7 +289,7 @@ impl Acifc {
     }
 
     fn window_comparison(&self, window: usize) -> u32 {
-        let regs: &AcifcRegisters = unsafe { &*self.registers };
+        let regs = ACIFC_REGS;
         let result;
         if window == 0 {
             regs.confw[0].write(WindowConfiguration::WFEN::SET);
@@ -308,17 +301,13 @@ impl Acifc {
         return result;
     }
 
-    fn test_output(&self) {
-        let regs: &AcifcRegisters = unsafe { &*self.registers };
-        // Turn on ACIFC and set outputs to be bypassed by AC test register
-        // Note: Currently configured for Hail
+	fn test_output(&self) {
+        let regs = ACIFC_REGS;
+
         regs.ctrl.modify(Control::ACTEST::SET);
-        // Set output value of AC0 (test) to 1
         regs.tr.modify(Test::ACTEST0::SET);
-        // Set IER to 1, leading to IMR being set to 1
         regs.ier.write(Interrupt::ACINT0::SET);
 
-        // Test to check if bits are correctly enabled. If not, check if the clock is working correctly.
         let enabled = regs.ctrl.read(Control::EN);
         let test0 = regs.tr.read(Test::ACTEST0);
         let imrtest = regs.imr.read(Interrupt::ACINT0);
@@ -333,7 +322,7 @@ impl Acifc {
     }
 }
 
-// Test output
+/// Test output
 impl hil::acifc::Acifc for Acifc {
     fn initialize_acifc(&self) -> ReturnCode {
         self.initialize_acifc();
