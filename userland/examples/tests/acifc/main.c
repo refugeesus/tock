@@ -5,14 +5,14 @@
 #include <timer.h>
 #include <tock.h>
 
-static void normal_comparison_polling(uint8_t ac) {
+static void comparison_polling(uint8_t ac) {
   uint count = 0;
   if (ac > 3) {
     printf("Please choose either ac 0 or 1 for hail, and 2 or 3 for imix.");
   }else  {
     while (1) {
       count++;
-      uint8_t result = normal_comparison(ac);
+      bool result = comparison(ac);
       printf("Try %d. Result = %d.\n", count, result);
       if (result == 1) {
         printf("This implies Vinp > Vinn!\n\n");
@@ -31,7 +31,7 @@ static void window_comparison_polling(uint8_t window) {
   }else  {
     while (1) {
       count++;
-      uint8_t result = window_comparison(window);
+      bool result = window_comparison(window);
       printf("Try %d. Result = %d.\n", count, result);
       if (result == 1) {
         printf("This implies Vacbn_x+1 < Vcommon < Vacap_x!\n\n");
@@ -67,13 +67,13 @@ int main(void) {
 
   switch (mode) {
     // Poll for a normal comparison every second and print the result
-    case 0: normal_comparison_polling(ac); break;
+    case 0: comparison_polling(ac); break;
 
     // Poll for a window comparison every second and print the result
     case 1: window_comparison_polling(window); break;
 
     // Function testing basic functionality
-    case 2: test_output(); break;
+    // case 2: test_output(); break;
   }
   printf("*********************\n");
   return 0;

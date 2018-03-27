@@ -1,4 +1,4 @@
-//! Provides userspace access to the ACIFC interface.
+//! Provides userspace access to the analog comparators on a board.
 //!
 //! ## Instantiation
 //! -----
@@ -46,15 +46,14 @@ impl<'a, A: hil::acifc::Acifc> Driver for Acifc<'a, A> {
             1 => self.acifc.initialize_acifc(),
 
             2 => ReturnCode::SuccessWithValue {
-                value: self.acifc.normal_comparison(data) as usize,
+                value: self.acifc.comparison(data) as usize,
             },
 
             3 => ReturnCode::SuccessWithValue {
                 value: self.acifc.window_comparison(data) as usize,
             },
 
-            4 => self.acifc.test_output(),
-
+            // 4 => self.acifc.test_output(),
             _ => return ReturnCode::ENOSUPPORT,
         }
     }
