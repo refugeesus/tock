@@ -44,8 +44,7 @@ static void window_comparison_polling(uint8_t window) {
 }
 
 int main(void) {
-  printf("*********************\n");
-  printf("ACIFC test application\n");
+  printf("\nACIFC test application\n");
 
   if (!acifc_exists()) {
     printf("ACIFC driver does not exist\n");
@@ -75,7 +74,7 @@ int main(void) {
     // Function testing basic functionality
     // case 2: test_output(); break;
   }
-  printf("*********************\n");
+  printf("\n");
   return 0;
 }
 
