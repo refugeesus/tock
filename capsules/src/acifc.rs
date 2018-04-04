@@ -12,7 +12,7 @@
 //! Author: Danilo Verhaert <verhaert@cs.stanford.edu>
 
 /// Syscall driver number.
-pub const DRIVER_NUM: usize = 0x07;
+pub const DRIVER_NUM: usize = 0x00007;
 
 use kernel::{AppId, Driver, ReturnCode};
 use kernel::hil;
