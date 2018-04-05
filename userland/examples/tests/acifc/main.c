@@ -9,14 +9,14 @@ static void comparison_polling(uint8_t ac) {
   uint count = 0;
   if (ac > 3) {
     printf("Please choose either ac 0 or 1 for hail, and 2 or 3 for imix.");
-  }else  {
+  }else {
     while (1) {
       count++;
       bool result = comparison(ac);
       printf("Try %d. Result = %d.\n", count, result);
       if (result == 1) {
         printf("This implies Vinp > Vinn!\n\n");
-      }else  {
+      }else {
         printf("This implies Vinp < Vinn!\n\n");
       }
       delay_ms(1000);
@@ -28,14 +28,14 @@ static void window_comparison_polling(uint8_t window) {
   uint count = 0;
   if (window > 1) {
     printf("Please choose window 0 for hail and 1 for imix.");
-  }else  {
+  }else {
     while (1) {
       count++;
       bool result = window_comparison(window);
       printf("Try %d. Result = %d.\n", count, result);
       if (result == 1) {
         printf("This implies Vacbn_x+1 < Vcommon < Vacap_x!\n\n");
-      }else  {
+      }else {
         printf("This implies Vcommon < Vacan_x+1 or Vcommon > Vacap_x\n\n");
       }
       delay_ms(1000);
@@ -71,8 +71,8 @@ int main(void) {
     // Poll for a window comparison every second and print the result
     case 1: window_comparison_polling(window); break;
 
-    // Function testing basic functionality
-    // case 2: test_output(); break;
+      // Function testing basic functionality
+      // case 2: test_output(); break;
   }
   printf("\n");
   return 0;
