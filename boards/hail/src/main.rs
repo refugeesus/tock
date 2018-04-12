@@ -74,7 +74,8 @@ struct Hail {
     ipc: kernel::ipc::IPC,
     crc: &'static capsules::crc::Crc<'static, sam4l::crccu::Crccu<'static>>,
     dac: &'static capsules::dac::Dac<'static>,
-    acifc: &'static capsules::acifc::Acifc<'static, sam4l::acifc::Acifc>,
+    analog_comparator:
+        &'static capsules::analog_comparator::AnalogComparator<'static, sam4l::acifc::Acifc>,
 }
 
 /// Mapping of integer syscalls to objects that implement syscalls.
@@ -104,7 +105,7 @@ impl Platform for Hail {
 
             capsules::dac::DRIVER_NUM => f(Some(self.dac)),
 
-            capsules::acifc::DRIVER_NUM => f(Some(self.acifc)),
+            capsules::analog_comparator::DRIVER_NUM => f(Some(self.analog_comparator)),
 
             kernel::ipc::DRIVER_NUM => f(Some(&self.ipc)),
             _ => f(None),
@@ -452,9 +453,9 @@ pub unsafe fn reset_handler() {
     );
 
     // ACIFC
-    let acifc = static_init!(
-        capsules::acifc::Acifc<'static, sam4l::acifc::Acifc>,
-        capsules::acifc::Acifc::new(&mut sam4l::acifc::ACIFC)
+    let analog_comparator = static_init!(
+        capsules::analog_comparator::AnalogComparator<'static, sam4l::acifc::Acifc>,
+        capsules::analog_comparator::AnalogComparator::new(&mut sam4l::acifc::ACIFC)
     );
 
     let hail = Hail {
@@ -474,7 +475,7 @@ pub unsafe fn reset_handler() {
         ipc: kernel::ipc::IPC::new(),
         crc: crc,
         dac: dac,
-        acifc: acifc,
+        analog_comparator: analog_comparator,
     };
 
     // Need to reset the nRF on boot

@@ -2,13 +2,16 @@
 driver number: 0x00007
 ---
 
-# ACIFC
+# Analog Comparator
 
 ## Overview
 
-The Analog Comparator Interface (ACIFC) controls a number of Analog Comparators (AC) with identical behavior. Each Analog Comparator compares two voltages and gives a compare output depending on this comparison.
+The Analog Comparator Interface (ACIFC) controls a number of Analog Comparators
+(AC) with identical behavior. Each Analog Comparator compares two voltages and
+gives a compare output depending on this comparison.
 
-A specific AC is referred to as ACx where x is any number from 0 to n and n is the index of last AC module. 
+A specific AC is referred to as ACx where x is any number from 0 to n and n is
+the index of last AC module.
 
 ## Command
 

@@ -20,9 +20,6 @@ bool comparison(uint8_t);
 // Compare the voltages of three pins (if one is between the other two)
 bool window_comparison(uint8_t);
 
-// Basic test function
-// int test_output(void);
-
 #ifdef __cplusplus
 }
 #endif

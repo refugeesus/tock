@@ -18,7 +18,7 @@ pub mod gpio_async;
 pub mod dac;
 pub mod nonvolatile_storage;
 pub mod usb;
-pub mod acifc;
+pub mod analog_comparator;
 pub mod ble_advertising;
 
 /// Shared interface for configuring components.

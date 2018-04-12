@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-#include <acifc.h>
+#include <analog_comparator.h>
 #include <timer.h>
 #include <tock.h>
 
@@ -54,11 +54,13 @@ int main(void) {
   // Set mode according to which implementation you want
   uint8_t mode = 0;
 
-  // Choose your comparator. AC = 0 corresponds to PA06 and PA07, whereas ac = 1 corresponds to PB02 and PB03.
-  // On the hail these are the pins DAC and WKP, and AC2 and AC3 respectively.
+  // Choose your comparator. AC = 0 corresponds to PA06 and PA07, whereas ac = 1
+  // corresponds to PB02 and PB03. On the hail these are the pins DAC and WKP,
+  // and AC2 and AC3 respectively.
   uint8_t ac = 1;
 
-  // Choose your window. For the hail, there is only one window. For imix, there are two (0 and 1).
+  // Choose your window. For the hail, there is only one window. For imix, there
+  // are two (0 and 1).
   uint8_t window = 1;
 
   // Initialize the ACIFC by enabling some basic necessities
@@ -71,8 +73,6 @@ int main(void) {
     // Poll for a window comparison every second and print the result
     case 1: window_comparison_polling(window); break;
 
-      // Function testing basic functionality
-      // case 2: test_output(); break;
   }
   printf("\n");
   return 0;

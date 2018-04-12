@@ -1,12 +1,20 @@
-//! Implementation of the GPIO controller.
+//! Implementation of the ACIFC controller.
 //!
 //! See datasheet section "37. Analog Comparator Interface (ACIFC)".
 //!
-//! The Analog Comparator Interface (ACIFC) controls a number of Analog Comparators (ACs) with identical behavior. Each Analog Comparator compares two voltages and gives an output depending on this comparison.
-//! A specific AC is referred to as ACx where x is any number from 0 to n and n is the index of last AC module. The ACIFC on the SAM4L supports a total of 8 ACs (and therefore 4 possible ACWs).
-//! However, note that the 64 pin SAM4L (e.g. on the Hail) has 2 ACs (ACA0 and ACB0), and the 100 pin SAM4L (e.g. on the Imix) has 4 ACs (ACA0, ACB0, ACA1, ACB1). Currently, no version of the SAM4L exists with all the 8 ACs implemented.
-//! Therefore a lot of the defined bitfields remain unused, but are initialized for a possible future scenario.
-//! The ACIFC can be configured in normal mode using each comparator independently or in window mode using defined comparator pairs (ACx and ACx+1) to observe a window.
+//! The Analog Comparator Interface (ACIFC) controls a number of Analog
+//! Comparators (ACs) with identical behavior. Each Analog Comparator compares
+//! two voltages and gives an output depending on this comparison. A specific AC
+//! is referred to as ACx where x is any number from 0 to n and n is the index
+//! of last AC module. The ACIFC on the SAM4L supports a total of 8 ACs (and
+//! therefore 4 possible ACWs). However, note that the 64 pin SAM4L (e.g. on the
+//! Hail) has 2 ACs (ACA0 and ACB0), and the 100 pin SAM4L (e.g. on the Imix)
+//! has 4 ACs (ACA0, ACB0, ACA1, ACB1). Currently, no version of the SAM4L
+//! exists with all the 8 ACs implemented. Therefore a lot of the defined
+//! bitfields remain unused, but are initialized for a possible future scenario.
+//! The ACIFC can be configured in normal mode using each comparator
+//! independently or in window mode using defined comparator pairs (ACx and
+//! ACx+1) to observe a window.
 //!
 //! Author: Danilo Verhaert <verhaert@cs.stanford.edu>
 
@@ -41,25 +49,32 @@ pub struct AcifcRegisters {
 
 register_bitfields![u32,
 	Control [
-		/// Analog comparator test mode. Equal to 1 means AC outputs will be bypassed with values in AC test register.
+		/// Analog comparator test mode. Equal to 1 means AC outputs will be
+		/// bypassed with values in AC test register.
 		ACTEST 7,
-		/// This bit is set when an enabled peripheral event is received (called by EVENTEN), and starts a single comparison.
+		/// This bit is set when an enabled peripheral event is received (called
+		/// by EVENTEN), and starts a single comparison.
 		ESTART 5,
 		/// This bit can be set by the user and starts a single comparison.
 		USTART 4,
-		/// This bit sets ESTART to 1 on receiving a peripheral event from another hardware module.
+		/// This bit sets ESTART to 1 on receiving a peripheral event from
+		/// another hardware module.
 		EVENTEN 1,
 		/// Enables or disables the ACIFC.
 		EN 0
 	],
 
 	Status [
-		/// This bit represents an output for the window mode, and reads one when the common input voltage is inside the window of the two non-common inputs.
+		/// This bit represents an output for the window mode, and reads one
+		/// when the common input voltage is inside the window of the two
+		/// non-common inputs.
 		WFCS3 27,
 		WFCS2 26,
 		WFCS1 25,
 		WFCS0 24,
-		/// ACRDY is set when the AC output is ready. ACCS is set when the positive input voltage V_{INP} is greater than the negative input voltage V_{INN}.
+		/// ACRDY is set when the AC output is ready. ACCS is set when the
+		/// positive input voltage V_{INP} is greater than the negative input
+		/// voltage V_{INN}.
 		ACRDY7 15,
 		ACCS7 14,
 		ACRDY6 13,
@@ -78,12 +93,18 @@ register_bitfields![u32,
 		ACCS0 0
 	],
 
+	/// - IER: Writing a one to a bit in this register will set the
+	///   corresponding bit in IMR.
+	/// - IDR: Writing a one to a bit in this register will clear the
+	///   corresponding bit in IMR.
+	/// - IMR: Writing a one in any of these bits will enable the corresponding
+	///   interrupt.
+	/// - ISR: WFINTx shows if a window mode interrupt is pending. SUTINTx shows
+	///   if a startup time interrupt is pending. ACINTx shows if a normal mode
+	///   interrupt is pending.
+	/// - ICR: Writing a one to a bit in this register will clear the
+	///   corresponding bit in ISR and the corresponding interrupt request.
 	Interrupt [
-		/// IER: Writing a one to a bit in this register will set the corresponding bit in IMR.
-		/// IDR: Writing a one to a bit in this register will clear the corresponding bit in IMR.
-		/// IMR: Writing a one in any of these bits will enable the corresponding interrupt.
-		/// ISR: WFINTx shows if a window mode interrupt is pending. SUTINTx shows if a startup time interrupt is pending. ACINTx shows if a normal mode interrupt is pending.
-		/// ICR: Writing a one to a bit in this register will clear the corresponding bit in ISR and the corresponding interrupt request.
 		WFINT3 27,
 		WFINT2 26,
 		WFINT1 25,
@@ -151,23 +172,27 @@ register_bitfields![u32,
 		],
 			/// Window Mode Interrupt Settings
 		WIS OFFSET(0) NUMBITS (3)[
-			/// Window interrupt as soon as the common input voltage is inside the window
+			/// Window interrupt as soon as the common input voltage is inside
+			/// the window
 			InterruptInsideWindow = 0,
-			/// Window interrupt as soon as the common input voltage is outside the window
+			/// Window interrupt as soon as the common input voltage is outside
+			/// the window
 			InterruptOutsideWindow = 1,
 			/// Window interrupt on toggle of ACWOUT
 			InterruptToggleAcwout = 2,
 			/// Window interrupt when evaluation of common input voltage is done
 			InterruptAfterEvaluation = 3,
-			/// Window interrupt when the common input voltage enters the window (i.e., rising-edge of ACWOUT)
+			/// Window interrupt when the common input voltage enters the window
+			/// (i.e., rising-edge of ACWOUT)
 			InterruptEnterWindow = 4,
-			/// Window interrupt when the common input voltage leaves the window (i.e., falling-edge of ACWOUT)
+			/// Window interrupt when the common input voltage leaves the window
+			/// (i.e., falling-edge of ACWOUT)
 			InterruptLeaveWindow = 5
 	]
 	],
 
 	ACConfiguration [
-		/// If equal to one, AC is always enabled. 
+		/// If equal to one, AC is always enabled.
 		ALWAYSON OFFSET(27) NUMBITS(1) [],
 		/// 0: Low-power mode. 1: Fastm ode.
 		FAST OFFSET(26) NUMBITS(1) [],
@@ -305,30 +330,9 @@ impl Acifc {
         }
         return result;
     }
-
-    // fn test_output(&self) {
-    //     let regs = ACIFC_REGS;
-
-    //     regs.ctrl.modify(Control::ACTEST::SET);
-    //     regs.tr.modify(Test::ACTEST0::SET);
-    //     regs.ier.write(Interrupt::ACINT0::SET);
-
-    //     let enabled = regs.ctrl.read(Control::EN);
-    //     let test0 = regs.tr.read(Test::ACTEST0);
-    //     let imrtest = regs.imr.read(Interrupt::ACINT0);
-    //     let conftest = regs.conf[0].read(ACConfiguration::ALWAYSON);
-    //     let acrdy0 = regs.sr.read(Status::ACRDY0);
-
-    //     debug!("Does the basic enabling work?: {}", enabled);
-    //     debug!("Does writing to a test register work? {}", test0);
-    //     debug!("IMR gets written after writing to IER? {}", imrtest);
-    //     debug!("Is Analog Comparator 0 ready? {}", acrdy0);
-    //     debug!("Does writing to Analog Comparator 0 work? {}", conftest);
-    // }
 }
 
-/// Test output
-impl hil::acifc::Acifc for Acifc {
+impl hil::analog_comparator::AnalogComparator for Acifc {
     fn initialize_acifc(&self) -> ReturnCode {
         self.initialize_acifc();
         return ReturnCode::SUCCESS;
@@ -341,10 +345,4 @@ impl hil::acifc::Acifc for Acifc {
     fn window_comparison(&self, data: usize) -> bool {
         self.window_comparison(data)
     }
-
-    // fn test_output(&self) -> ReturnCode {
-    //     self.test_output();
-    //     self.disable_clock();
-    //     return ReturnCode::SUCCESS;
-    // }
 }

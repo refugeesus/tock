@@ -1,4 +1,4 @@
-#include "acifc.h"
+#include "analog_comparator.h"
 #include "tock.h"
 
 int acifc_exists(void) {
@@ -16,7 +16,3 @@ bool comparison(uint8_t ac){
 bool window_comparison(uint8_t window){
   return command(DRIVER_NUM_ACIFC, 3, window, 0);
 }
-
-// int test_output(void) {
-//   return command(DRIVER_NUM_ACIFC, 4, 0, 0);
-// }

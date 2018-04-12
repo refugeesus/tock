@@ -26,7 +26,7 @@ pub mod virtual_alarm;
 pub mod virtual_flash;
 pub mod virtual_i2c;
 pub mod virtual_spi;
-pub mod acifc;
+pub mod analog_comparator;
 pub mod adc;
 pub mod dac;
 pub mod i2c_master_slave_driver;

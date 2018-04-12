@@ -79,7 +79,8 @@ struct Imix {
     adc: &'static capsules::adc::Adc<'static, sam4l::adc::Adc>,
     led: &'static capsules::led::LED<'static, sam4l::gpio::GPIOPin>,
     button: &'static capsules::button::Button<'static, sam4l::gpio::GPIOPin>,
-    acifc: &'static capsules::acifc::Acifc<'static, sam4l::acifc::Acifc>,
+    analog_comparator:
+        &'static capsules::analog_comparator::AnalogComparator<'static, sam4l::acifc::Acifc>,
     spi: &'static capsules::spi::Spi<'static, VirtualSpiMasterDevice<'static, sam4l::spi::SpiHw>>,
     ipc: kernel::ipc::IPC,
     ninedof: &'static capsules::ninedof::NineDof<'static>,
@@ -132,7 +133,7 @@ impl kernel::Platform for Imix {
             capsules::adc::DRIVER_NUM => f(Some(self.adc)),
             capsules::led::DRIVER_NUM => f(Some(self.led)),
             capsules::button::DRIVER_NUM => f(Some(self.button)),
-            capsules::acifc::DRIVER_NUM => f(Some(self.acifc)),
+            capsules::analog_comparator::DRIVER_NUM => f(Some(self.analog_comparator)),
             capsules::ambient_light::DRIVER_NUM => f(Some(self.ambient_light)),
             capsules::temperature::DRIVER_NUM => f(Some(self.temp)),
             capsules::humidity::DRIVER_NUM => f(Some(self.humidity)),
@@ -508,9 +509,9 @@ pub unsafe fn reset_handler() {
         capsules::crc::Crc::new(&mut sam4l::crccu::CRCCU, kernel::Grant::create())
     );
 
-    let acifc = static_init!(
-        capsules::acifc::Acifc<'static, sam4l::acifc::Acifc>,
-        capsules::acifc::Acifc::new(&mut sam4l::acifc::ACIFC)
+    let analog_comparator = static_init!(
+        capsules::analog_comparator::AnalogComparator<'static, sam4l::acifc::Acifc>,
+        capsules::analog_comparator::AnalogComparator::new(&mut sam4l::acifc::ACIFC)
     );
 
     rf233_spi.set_client(rf233);
@@ -593,7 +594,7 @@ pub unsafe fn reset_handler() {
         adc: adc,
         led: led,
         button: button,
-        acifc: acifc,
+        analog_comparator: analog_comparator,
         crc: crc,
         spi: spi_syscalls,
         ipc: kernel::ipc::IPC::new(),
