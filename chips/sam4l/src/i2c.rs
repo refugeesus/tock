@@ -11,11 +11,11 @@
 
 use core::cell::Cell;
 use dma::{DMAChannel, DMAClient, DMAPeripheral};
-use kernel::{ClockInterface, StaticRef};
-use kernel::common::VolatileCell;
 use kernel::common::peripherals::{PeripheralManagement, PeripheralManager};
 use kernel::common::take_cell::TakeCell;
+use kernel::common::VolatileCell;
 use kernel::hil;
+use kernel::{ClockInterface, StaticRef};
 use pm;
 
 // Listing of all registers related to the TWIM peripheral.

@@ -24,12 +24,11 @@ fi
 
 mkdir -p $LOCAL_CARGO
 
-
 # Check if we actually need to do anything
 needs_install=false
 if [[ ! -x $LOCAL_CARGO/bin/rustfmt ]]; then
 	needs_install=true
-elif [[ $($LOCAL_CARGO/bin/rustfmt --version | cut -d'-' -f1) != "$RUSTFMT_VERSION" ]]; then
+elif [[ $($LOCAL_CARGO/bin/rustfmt --version | perl -pe '($_)=/([0-9]+([.][0-9]+)+)/') != "$RUSTFMT_VERSION" ]]; then
 	needs_install=true
 fi
 

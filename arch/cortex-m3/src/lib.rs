@@ -3,8 +3,8 @@
 
 extern crate kernel;
 
-pub mod systick;
 pub mod nvic;
+pub mod systick;
 
 #[no_mangle]
 #[naked]

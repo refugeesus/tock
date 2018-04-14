@@ -19,33 +19,32 @@ pub mod grant;
 #[macro_use]
 pub mod debug;
 pub mod driver;
+pub mod hil;
 pub mod ipc;
 pub mod mem;
 pub mod memop;
 pub mod returncode;
-pub mod hil;
 
 // Work around https://github.com/rust-lang-nursery/rustfmt/issues/6
 // It's a little sad that we have to skip the whole module, but that's
 // better than the unmaintainable pile 'o strings IMO
-#[cfg_attr(rustfmt, rustfmt_skip)]
 pub mod process;
 
 pub mod support;
 
 mod sched;
 
-mod syscall;
 mod platform;
+mod syscall;
 
 pub use callback::{AppId, Callback};
 pub use common::StaticRef;
 pub use driver::Driver;
 pub use grant::Grant;
 pub use mem::{AppPtr, AppSlice, Private, Shared};
+pub use platform::systick::SysTick;
 pub use platform::{mpu, systick, Chip, Platform};
 pub use platform::{ClockInterface, NoClockControl, NO_CLOCK_CONTROL};
-pub use platform::systick::SysTick;
 pub use process::{Process, State};
 pub use returncode::ReturnCode;
 
