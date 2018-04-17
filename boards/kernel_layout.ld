@@ -28,24 +28,11 @@
  */
 
 
-/*
- * CCFG - Customer Configuration
- *
- * Chip specific to TI family chips. It is a configuration area
- * needed to validate the image - otherwise it is not possible to boot.
- */
-CCFG_ORIGIN = DEFINED(CCFG_ORIGIN) ? CCFG_ORIGIN : 0;
-CCFG_LENGTH = DEFINED(CCFG_LENGTH) ? CCFG_LENGTH : 0;
 
-MEMORY
-{
-  rom (rx)  : ORIGIN =  ROM_ORIGIN, LENGTH =  ROM_LENGTH
-  prog (rx) : ORIGIN = PROG_ORIGIN, LENGTH = PROG_LENGTH
-  ccfg (rx) : ORIGIN = CCFG_ORIGIN, LENGTH = CCFG_LENGTH
-  ram (rwx) : ORIGIN =  RAM_ORIGIN, LENGTH =  RAM_LENGTH
-}
 
-__stack_size__ = DEFINED(__stack_size__) ? __stack_size__ : 0x1000;
+
+
+__stack_size__ = 0x1000;
 
 SECTIONS
 {
@@ -157,6 +144,7 @@ SECTIONS
       _sstorage = .;
       *(.storage* storage*)
       _estorage = .;
+      . = ALIGN(512);
     } > rom
     . = ALIGN(512);
 
@@ -199,11 +187,10 @@ SECTIONS
          */
         . = ALIGN(8);
          _sstack = .;
-
-        . = . + __stack_size__;
-
+         . = . + __stack_size__;
+         _estack = .;
         . = ALIGN(8);
-        _estack = .;
+
     } > ram
 
 
@@ -216,7 +203,7 @@ SECTIONS
      * Tock assumes the relocation section follows all static elements and will
      * copy (_erelocate - _srelocate) bytes from _etext to _srelocate.
      */
-    .relocate : AT (_etext)
+    .relocate : ALIGN(4k)
     {
         . = ALIGN(4);
         _srelocate = .;
@@ -225,7 +212,7 @@ SECTIONS
 
         . = ALIGN(4);
         _erelocate = .;
-    } > ram
+    } > ram AT > rom
 
 
 
