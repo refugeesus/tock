@@ -10,5 +10,5 @@ include ../Makefile.common
 flash: target/$(TARGET)/release/launchxl
 	$(call check_defined, UNIFLASH_CLI_BASE, See launchxl README for details)
 	@echo "Flashing target/$(TARGET)/release/launchxl"
-	@$(UNIFLASH_CLI_BASE)/ccs_base/DebugServer/bin/DSLite flash -c jtag/cc2652r1f.ccxml -e -f target/$(TARGET)/release/launchxl
+	@$(UNIFLASH_CLI_BASE)/ccs_base/DebugServer/bin/DSLite flash -c jtag/cc1312r1f3.ccxml -e -f target/$(TARGET)/release/cc1312r1f3
 
