@@ -8,6 +8,19 @@
             <instance XML_version="1.2" href="drivers/jlinkcortexm4.xml" id="drivers" xml="jlinkcortexm4.xml" xmlpath="drivers"/>
             <platform XML_version="1.2" id="platform_0">
                 <instance XML_version="1.2" desc="CC1312R1F3_0" href="devices/cc1312r1f3.xml" id="CC1312R1F3_0" xml="cc1312r1f3.xml" xmlpath="devices"/>
+            <device HW_revision="1" XML_version="1.2" description="Next generation CC1310 device, the SimpleLink(TM) Sub-1 GHz CC1312 wireless MCU" id="CC1312R1F3_0" partnum="CC1312R1F3" simulation="no">
+                    <router HW_revision="1.0" XML_version="1.2" description="ICEPick_C Router" id="IcePick_C_0" isa="ICEPICK_C">
+                        <subpath id="subpath_0">
+                            <router HW_revision="1.0" XML_version="1.2" description="CS_DAP Router" id="CS_DAP_0" isa="CS_DAP">
+                                <subpath id="subpath_1">
+                                    <cpu HW_revision="1.0" XML_version="1.2" description="Cortex_M4 CPU" deviceSim="false" id="Cortex_M4_0" isa="Cortex_M4">
+                                        <property Type="choicelist" Value="0" id="Target Interface Type"/>
+                                    </cpu>
+                                </subpath>
+                            </router>
+                        </subpath>
+                    </router>
+                </device>
             </platform>
         </connection>
     </configuration>
