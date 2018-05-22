@@ -17,6 +17,11 @@ RWD=$(TOCK_USERLAND_BASE_DIR)/../boards/launchxl
 .PHONY: flash
 flash: $(BOARD_BUILDDIR)/$(TOCK_ARCH).bin $(BUILDDIR)/$(PACKAGE_NAME).tab
 	$(call check_defined, UNIFLASH_CLI_BASE, See launchxl README for details)
+	@$(UNIFLASH_CLI_BASE)/ccs_base/DebugServer/bin/DSLite flash -c $(RWD)/jtag/cc2652r1f.ccxml -e -f $<,$(PROG_BASE)
+
+.PHONY: cc1312 
+flash: $(BOARD_BUILDDIR)/$(TOCK_ARCH).bin $(BUILDDIR)/$(PACKAGE_NAME).tab
+	$(call check_defined, UNIFLASH_CLI_BASE, See launchxl README for details)
 	@$(UNIFLASH_CLI_BASE)/ccs_base/DebugServer/bin/DSLite flash -c $(RWD)/jtag/cc1312r1f3.ccxml -e -f $<,$(PROG_BASE)
 
 .PHONY: program
