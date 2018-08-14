@@ -1,0 +1,10 @@
+[package]
+name = "cc26x0"
+version = "0.1.0"
+authors = ["Tock Project Developers <tock-dev@googlegroups.com>"]
+
+[dependencies]
+cortexm3 = { path = "../../tock/arch/cortex-m3" }
+kernel = { path = "../../tock/kernel" }
+cc26xx = { path = "../../tock/chips/cc26xx" }
+bitfield = "0.11.0"
