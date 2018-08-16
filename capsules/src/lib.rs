@@ -7,7 +7,10 @@
 #[allow(unused_imports)]
 #[macro_use(debug)]
 extern crate kernel;
-
+extern crate fixedvec;
+extern crate cc26x0;
+#[macro_use]
+extern crate bitfield;
 pub mod test;
 
 #[macro_use]
@@ -45,6 +48,7 @@ pub mod nrf51822_serialization;
 pub mod pca9544a;
 pub mod rf233;
 pub mod rf233_const;
+pub mod rfcore_driver;
 pub mod rng;
 pub mod sdcard;
 pub mod segger_rtt;
