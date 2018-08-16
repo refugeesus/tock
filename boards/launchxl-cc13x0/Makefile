@@ -9,12 +9,11 @@ JLINK_EXE ?= JLinkExe
 JLINK_DEVICE ?= cc1310f128
 JLINK_ARGUMENTS ?= -device $(JLINK_DEVICE) -if jtag -speed 4000 -AutoConnect 1 -jtagconf -1,1
 
-# include ../Makefile.common
+include ../Makefile.common
 
 TI_BASE="/Applications/ti/ccsv8"
 PROG_BASE=0x10000
 
-include ../Makefile.common
 
 #flash: target/$(TARGET)/release/sensortag
 #	$(call check_defined, UNIFLASH_CLI_BASE, See launchxl README for details)

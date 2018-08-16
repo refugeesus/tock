@@ -7,6 +7,8 @@
 
 pub mod rfc;
 pub mod ble;
+pub mod radio;
+pub mod commands;
 
 pub static mut RFC: rfc::RFCore = rfc::RFCore::new();
 pub static mut BLE: ble::Ble = unsafe { ble::Ble::new(&RFC) };

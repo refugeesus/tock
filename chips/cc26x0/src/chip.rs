@@ -1,17 +1,15 @@
 use cortexm3::{self, nvic};
-use cc26xx::gpio;
-use cc26xx::peripheral_interrupts::*;
-
 const X0_RF_CPE1: u32 = 2;
 const X0_RF_CPE0: u32 = 9;
 const X0_RF_CMD_ACK: u32 = 11;
 
+use peripheral_interrupts::*;
+use gpio;
 use radio;
 use timer;
 use uart;
 use kernel;
 use rtc;
-use kernel::support;
 use peripherals;
 use power;
 
@@ -101,6 +99,10 @@ impl kernel::Chip for Cc26x0 {
 
     fn sleep(&self) {
         let sleep_mode: SleepMode = SleepMode::from(unsafe { peripherals::M.lowest_sleep_mode() });
+        
+        unsafe {
+            cortexm3::support::wfi();
+        }
 
         match sleep_mode {
             SleepMode::DeepSleep => unsafe {
@@ -110,8 +112,6 @@ impl kernel::Chip for Cc26x0 {
             _ => (),
         }
 
-        unsafe { support::wfi() }
-
         match sleep_mode {
             SleepMode::DeepSleep => unsafe {
                 power::prepare_wakeup();
@@ -120,4 +120,11 @@ impl kernel::Chip for Cc26x0 {
             _ => (),
         }
     }
+
+    unsafe fn atomic<F, R>(&self, f: F) -> R
+        where
+            F: FnOnce() -> R,
+        {
+            cortexm3::support::atomic(f)
+        }
 }

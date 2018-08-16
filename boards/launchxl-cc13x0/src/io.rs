@@ -1,11 +1,12 @@
-use core::fmt::{write, Arguments, Write};
+use core::fmt::Write;
 use kernel::hil::uart::{self, UART};
-use kernel::hil::gpio::Pin;
 use kernel::hil::led;
 use kernel::debug;
-use cc26xx;
 use cc26x0;
+use cortexm3;
 use core::panic::PanicInfo;
+use PROCESSES;
+
 
 pub struct Writer {
     initialized: bool,
@@ -18,7 +19,7 @@ impl Write for Writer {
         let uart = unsafe { &mut cc26x0::uart::UART0 };
         if !self.initialized {
             self.initialized = true;
-            uart.init(uart::UARTParams {
+            uart.configure(uart::UARTParameters {
                 baud_rate: 115200,
                 stop_bits: uart::StopBits::One,
                 parity: uart::Parity::None,
@@ -57,27 +58,7 @@ pub unsafe extern "C" fn panic_fmt(pi: &PanicInfo) -> ! {
     // 6 = Red led, 7 = Green led
     const LED_PIN: usize = 6;
 
-    let led0 = &cc26xx::gpio::PORT[10]; // Red led
-    let led1 = &cc26xx::gpio::PORT[15]; // Green led
-
-    led0.make_output();
-    led1.make_output();
-    loop {
-        for _ in 0..1000000 {
-            led0.clear();
-            led1.clear();
-        }
-        for _ in 0..100000 {
-            led0.set();
-            led1.set();
-        }
-        for _ in 0..1000000 {
-            led0.clear();
-            led1.clear();
-        }
-        for _ in 0..500000 {
-            led0.set();
-            led1.set();
-        }
-    }
+    let led = &mut led::LedLow::new(&mut cc26x0::gpio::PORT[LED_PIN]);
+    let writer = &mut WRITER;
+    debug::panic(&mut [led], writer, pi, &cortexm3::support::nop, &PROCESSES)
 }

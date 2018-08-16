@@ -2,7 +2,6 @@
 #![no_std]
 #![crate_name = "cc26x0"]
 #![crate_type = "rlib"]
-extern crate cc26xx;
 extern crate cortexm3;
 #[allow(unused_imports)]
 #[macro_use]
@@ -10,6 +9,7 @@ extern crate kernel;
 
 #[macro_use]
 extern crate bitfield;
+extern crate fixedvec;
 
 pub mod aon;
 pub mod chip;
@@ -27,7 +27,7 @@ pub mod prcm;
 pub mod rtc;
 pub mod gpio;
 pub mod tmp;
-
+pub mod peripheral_interrupts;
 pub mod power;
 pub mod peripherals;
 pub mod power_manager;

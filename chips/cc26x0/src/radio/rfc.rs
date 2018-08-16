@@ -20,8 +20,8 @@ use self::rfc_commands::*;
 use prcm;
 use rtc;
 
-use kernel::common::regs::{ReadOnly, ReadWrite};
-use kernel::common::VolatileCell;
+use kernel::common::registers::{ReadOnly, ReadWrite};
+use kernel::common::cells::VolatileCell;
 use core::cell::Cell;
 use core::result::Result;
 
@@ -130,7 +130,7 @@ pub enum RfcInterrupt {
 #[derive(PartialEq, Clone, Copy)]
 pub enum RfcMode {
     BLE = 0x00,
-    IEEE802154 = 0x01,
+    IEEE = 0x01,
     Unchanged = 0xFF,
 }
 
@@ -503,7 +503,7 @@ impl RFCore {
 }
 
 pub mod rfc_commands {
-    use kernel::common::regs::ReadOnly;
+    use kernel::common::registers::ReadOnly;
 
     /* Basic direct command */
     pub struct DirectCommand {
@@ -569,6 +569,25 @@ pub mod rfc_commands {
         pub ratmr: u32,
         pub start_trigger: u8,
         pub condition: RfcCondition,
+    }
+
+    // Continuous TX test, unimplemented
+    #[repr(C)]
+    pub struct CmdTxTest {
+        // command_no 0x0808
+        pub command_no: u16,
+        pub status: u16,
+        pub p_nextop: u32,
+        pub ratmr: u32,
+        pub start_trigger: u8,
+        pub condition: RfcCondition,
+        pub config: u8,
+        _reserved_a: u8,
+        pub tx_word: u16,
+        _reserved_b: u8,
+        pub end_trigger: RfcTrigger,
+        pub sync_word: u32,
+        pub end_time: u32,
     }
 
     /* Bitfields used by many commands */

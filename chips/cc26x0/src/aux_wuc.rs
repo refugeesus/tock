@@ -2,7 +2,7 @@
 //!
 //! NOTE: as of now, the aux controller can only be used by one process at a time.
 
-use kernel::common::regs::{ReadOnly, ReadWrite, WriteOnly};
+use kernel::common::registers::{ReadOnly, ReadWrite, WriteOnly};
 use aon;
 
 struct AuxWucRegisters {

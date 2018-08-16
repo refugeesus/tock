@@ -6,17 +6,26 @@ build = "build.rs"
 
 [profile.dev]
 panic = "abort"
+lto = false
 opt-level = "z"
 debug = true
 
 [profile.release]
 panic = "abort"
+lto = true
 opt-level = "z"
 debug = true
+
+[[bin]]
+name = "launchxl-cc13x0"
+path = "src/main.rs"
+
+[[bin]]
+name = "launchxlccfg-cc13x0"
+path = "src/ccfg.rs"
 
 [dependencies]
 cortexm3 = { path = "../../arch/cortex-m3" }
 capsules = { path = "../../capsules" }
 kernel = { path = "../../kernel" }
-cc26xx = { path = "../../chips/cc26xx" }
 cc26x0 = { path = "../../chips/cc26x0" }

@@ -1,9 +1,9 @@
 use prcm;
 use ioc;
-use cc26xx::gpio;
+use gpio;
 use kernel::hil::gpio::Pin;
 use core::cell::Cell;
-use kernel::common::VolatileCell;
+use kernel::common::cells::VolatileCell;
 
 pub const I2C_MCR_MFE: u32 = 0x10;
 pub const I2C_MCTRL_RUN: u32 = 0x1;

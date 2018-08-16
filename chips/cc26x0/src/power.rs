@@ -1,4 +1,4 @@
-use kernel::common::VolatileCell;
+use kernel::common::cells::VolatileCell;
 use power_manager::{PowerManager, Resource, ResourceManager};
 use prcm::{Power, PowerDomain};
 use cortexm3::scb;

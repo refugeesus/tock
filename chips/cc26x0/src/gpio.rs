@@ -6,14 +6,15 @@
 
 use core::cell::Cell;
 use core::ops::{Index, IndexMut};
-use kernel::common::regs::{ReadWrite, WriteOnly};
+use kernel::common::registers::{ReadWrite, WriteOnly};
 use kernel::hil::gpio::Pin;
+use kernel::common::StaticRef;
+use kernel::common::cells::OptionalCell;
 use kernel::hil;
 use prcm;
 use ioc;
 
 const NUM_PINS: usize = 32;
-const GPIO_BASE: *const GpioRegisters = 0x4002_2000 as *const GpioRegisters;
 
 #[repr(C)]
 pub struct GpioRegisters {
@@ -109,22 +110,23 @@ pub unsafe fn set_pins_to_default_conf() {
     PORT[UART_TX].set_input_mode(hil::gpio::InputMode::PullDown);
 }
 
+const GPIO_BASE: StaticRef<GpioRegisters> =
+    unsafe { StaticRef::new(0x40022000 as *const GpioRegisters) };
+
 pub struct GPIOPin {
-    regs: *const GpioRegisters,
     pin: usize,
     pin_mask: u32,
     client_data: Cell<usize>,
-    client: Cell<Option<&'static hil::gpio::Client>>,
+    client: OptionalCell<&'static hil::gpio::Client>,
 }
 
 impl GPIOPin {
     const fn new(pin: usize) -> GPIOPin {
         GPIOPin {
-            regs: GPIO_BASE,
             pin: pin,
             pin_mask: 1 << (pin % NUM_PINS),
             client_data: Cell::new(0),
-            client: Cell::new(None),
+            client: OptionalCell::empty(),
         }
     }
 
@@ -133,11 +135,11 @@ impl GPIOPin {
     }
 
     pub fn set_client<C: hil::gpio::Client>(&self, client: &'static C) {
-        self.client.set(Some(client));
+        self.client.set(client);
     }
 
     pub fn handle_interrupt(&self) {
-        self.client.get().map(|client| {
+        self.client.map(|client| {
             client.fired(self.client_data.get());
         });
     }
@@ -159,7 +161,7 @@ impl hil::gpio::Pin for GPIOPin {
         // Disable input in the io configuration
         ioc::IOCFG[self.pin].enable_output();
         // Enable data output
-        let regs: &GpioRegisters = unsafe { &*self.regs };
+        let regs = GPIO_BASE;
         regs.doe.set(regs.doe.get() | self.pin_mask);
     }
 
@@ -167,33 +169,33 @@ impl hil::gpio::Pin for GPIOPin {
         self.enable_gpio();
         ioc::IOCFG[self.pin].enable_input();
         // Disable data output
-        let regs: &GpioRegisters = unsafe { &*self.regs };
+        let regs = GPIO_BASE;
         regs.doe.set(regs.doe.get() & !self.pin_mask);
     }
 
     fn disable(&self) {
         ioc::IOCFG[self.pin].low_leakage_mode();
-        let regs: &GpioRegisters = unsafe { &*self.regs };
+        let regs = GPIO_BASE;
         regs.doe.set(regs.doe.get() & !self.pin_mask);
     }
 
     fn set(&self) {
-        let regs: &GpioRegisters = unsafe { &*self.regs };
+        let regs = GPIO_BASE;
         regs.dout_set.set(self.pin_mask);
     }
 
     fn clear(&self) {
-        let regs: &GpioRegisters = unsafe { &*self.regs };
+        let regs = GPIO_BASE;
         regs.dout_clr.set(self.pin_mask);
     }
 
     fn toggle(&self) {
-        let regs: &GpioRegisters = unsafe { &*self.regs };
+        let regs = GPIO_BASE;
         regs.dout_tgl.set(self.pin_mask);
     }
 
     fn read(&self) -> bool {
-        let regs: &GpioRegisters = unsafe { &*self.regs };
+        let regs = GPIO_BASE;
         regs.din.get() & self.pin_mask != 0
     }
 
@@ -227,7 +229,7 @@ impl IndexMut<usize> for Port {
 
 impl Port {
     pub fn handle_interrupt(&self) {
-        let regs: &GpioRegisters = unsafe { &*GPIO_BASE };
+        let regs = GPIO_BASE;
         let evflags = regs.evflags.get();
         // Clear all interrupts by setting their bits to 1 in evflags
         regs.evflags.set(evflags);
