@@ -48,7 +48,6 @@ pub mod nrf51822_serialization;
 pub mod pca9544a;
 pub mod rf233;
 pub mod rf233_const;
-pub mod rfcore_driver;
 pub mod rng;
 pub mod sdcard;
 pub mod segger_rtt;

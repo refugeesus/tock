@@ -12,6 +12,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "capsules"
 version = "0.1.0"
 dependencies = [
+ "bitfield 0.11.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "cc26x0 0.1.0",
+ "fixedvec 0.2.3 (registry+https://github.com/rust-lang/crates.io-index)",
  "kernel 0.1.0",
 ]
 

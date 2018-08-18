@@ -27,6 +27,7 @@ pub mod prcm;
 pub mod rtc;
 pub mod gpio;
 pub mod tmp;
+pub mod trng;
 pub mod peripheral_interrupts;
 pub mod power;
 pub mod peripherals;
