@@ -1,6 +1,6 @@
 h
 r
-loadbin target/thumbv7em-none-eabi/release/launchxlccfg.bin, 0x57FA8
+loadbin target/thumbv7em-none-eabi/release/launchxlccfg-cc13x0.bin, 0x1FFA8
 r
 h
 g
