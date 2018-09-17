@@ -6,6 +6,9 @@
 //! You need a device that provides the `hil::uart::UART` trait.
 //!
 //! ```rust
+//! #[macro_use]
+//! extern crate kernel;
+//! use kernel::common::utils;
 //! let console = static_init!(
 //!     Console<usart::USART>,
 //!     Console::new(&usart::USART0,

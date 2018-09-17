@@ -5,7 +5,7 @@
 #![no_std]
 
 #[allow(unused_imports)]
-#[macro_use(debug)]
+#[macro_use]
 extern crate kernel;
 
 pub mod test;
@@ -39,6 +39,7 @@ pub mod ltc294x;
 pub mod max17205;
 pub mod mcp230xx;
 pub mod mx25r6435f;
+pub mod nextnode_uart;
 pub mod ninedof;
 pub mod nonvolatile_storage_driver;
 pub mod nonvolatile_to_pages;
@@ -62,3 +63,4 @@ pub mod virtual_flash;
 pub mod virtual_i2c;
 pub mod virtual_spi;
 pub mod virtual_uart;
+

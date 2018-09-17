@@ -28,7 +28,7 @@ struct UartRegisters {
     dmactl: ReadWrite<u32>,
 }
 
-pub static mut UART0: UART = UART::new();
+
 
 register_bitfields![
     u32,
@@ -60,8 +60,15 @@ register_bitfields![
     ]
 ];
 
-const UART_BASE: StaticRef<UartRegisters> =
+const UART0_BASE: StaticRef<UartRegisters> =
     unsafe { StaticRef::new(0x40001000 as *const UartRegisters) };
+
+const UART1_BASE: StaticRef<UartRegisters> =
+    unsafe { StaticRef::new(0x4000B000 as *const UartRegisters) };
+
+pub static mut UART0: UART = UART::new(UART0_BASE);
+pub static mut UART1: UART = UART::new(UART1_BASE);
+
 
 /// Stores an ongoing TX transaction
 struct Transaction {
@@ -81,9 +88,9 @@ pub struct UART {
 }
 
 impl UART {
-    const fn new() -> UART {
+    const fn new( base_reg: StaticRef<UartRegisters>) -> UART {
         UART {
-            registers: UART_BASE,
+            registers: base_reg,
             client: OptionalCell::empty(),
             transaction: MapCell::empty(),
         }
@@ -159,7 +166,7 @@ impl UART {
         );
     }
 
-    fn enable_interrupts(&self) {
+    pub fn enable_interrupts(&self) {
         // Disable all UART interrupts
         self.registers.imsc.modify(Interrupts::ALL_INTERRUPTS::SET);
     }

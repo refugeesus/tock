@@ -11,6 +11,7 @@ extern crate cc26x2;
 #[macro_use(create_capability, debug, debug_gpio, static_init)]
 extern crate kernel;
 
+use capsules::nextnode_uart;
 use capsules::virtual_uart::{UartDevice, UartMux};
 use cc26x2::aon;
 use cc26x2::prcm;
@@ -118,8 +119,8 @@ unsafe fn configure_pins() {
     cc26x2::gpio::PORT[0].enable_gpio();
     cc26x2::gpio::PORT[1].enable_gpio();
 
-    cc26x2::gpio::PORT[2].enable_uart_rx();
-    cc26x2::gpio::PORT[3].enable_uart_tx();
+    cc26x2::gpio::PORT[2].enable_uart0_rx();
+    cc26x2::gpio::PORT[3].enable_uart0_tx();
 
     cc26x2::gpio::PORT[4].enable_i2c_scl();
     cc26x2::gpio::PORT[5].enable_i2c_sda();
@@ -141,6 +142,8 @@ unsafe fn configure_pins() {
 
     // unused   cc26x2::gpio::PORT[16]
     // unused   cc26x2::gpio::PORT[17]
+    cc26x2::gpio::PORT[19].enable_uart1_rx();
+    cc26x2::gpio::PORT[20].enable_uart1_tx();
 
     // PWM      cc26x2::gpio::PORT[18]
     // PWM      cc26x2::gpio::PORT[19]
@@ -351,6 +354,37 @@ pub unsafe fn reset_handler() {
         alarm,
         rng,
     };
+
+    nextnode_uart::test();
+
+
+    // Create a UartDevice for the console.
+    // let console_uart = static_init!(UartDevice, UartDevice::new(uart_mux, true));
+    // console_uart.setup();
+
+    cc26x2::uart::UART1.enable_interrupts();
+
+    // let console = static_init!(
+    //     capsules::console::Console<UartDevice>,
+    //     capsules::console::Console::new(
+    //         console_uart,
+    //         115200,
+    //         &mut capsules::console::WRITE_BUF,
+    //         &mut capsules::console::READ_BUF,
+    //         board_kernel.create_grant(&memory_allocation_capability)
+    //     )
+    // );
+    // kernel::hil::uart::UART::set_client(console_uart, console);
+    // console.initialize();
+
+    // let nextnode_uart = static_init!(
+    //     nextnode_uart::NextnodeUart<'static, cc26x2::uart::UART>,
+    //     nextnode_uart::NextnodeUart::new(&cc26x2::uart::UART1)
+    //     );
+    // hil::uart::UART::set_client(&cc26x2::uart::UART1, nextnode_uart);
+    //cc26x2::uart::UART1.send_byte(0x21);
+
+
 
     let mut chip = cc26x2::chip::Cc26X2::new();
 
