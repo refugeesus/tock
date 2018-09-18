@@ -61,27 +61,27 @@ register_bitfields![
             Set =  0b111111110010,
             // you are allowed to write 0 to everyone
             Clear = 0x000000 
-        ],
-        CTSIMM OFFSET(1) NUMBITS(1) [], // clear to send interrupt mask
-        RXIM OFFSET(4) NUMBITS(1) [],   // receive interrupt mask
-        TXIM OFFSET(5) NUMBITS(1) [],   // transmit interrupt mask
-        RTIM OFFSET(6) NUMBITS(1) [],   // receive timeout interrupt mask
-        FEIM OFFSET(7) NUMBITS(1) [],   // framing error interrupt mask
-        PEIM OFFSET(8) NUMBITS(1) [],   // parity error interrupt mask
-        BEIM OFFSET(9) NUMBITS(1) [],   // break error interrupt mask
-        OEIM OFFSET(10) NUMBITS(1) [],  // overrun error interrupt mask
-        EOTIM OFFSET(11) NUMBITS(1) [] // end of transmission interrupt mask
+        ]
+        // CTSIMM OFFSET(1) NUMBITS(1) [], // clear to send interrupt mask
+        // RXIM OFFSET(4) NUMBITS(1) [],   // receive interrupt mask
+        // TXIM OFFSET(5) NUMBITS(1) [],   // transmit interrupt mask
+        // RTIM OFFSET(6) NUMBITS(1) [],   // receive timeout interrupt mask
+        // FEIM OFFSET(7) NUMBITS(1) [],   // framing error interrupt mask
+        // PEIM OFFSET(8) NUMBITS(1) [],   // parity error interrupt mask
+        // BEIM OFFSET(9) NUMBITS(1) [],   // break error interrupt mask
+        // OEIM OFFSET(10) NUMBITS(1) [],  // overrun error interrupt mask
+        // EOTIM OFFSET(11) NUMBITS(1) [] // end of transmission interrupt mask
     ]
 ];
 
 const UART0_BASE: StaticRef<UartRegisters> =
     unsafe { StaticRef::new(0x40001000 as *const UartRegisters) };
 
-// const UART1_BASE: StaticRef<UartRegisters> =
-//     unsafe { StaticRef::new(0x4000B000 as *const UartRegisters) };
+const UART1_BASE: StaticRef<UartRegisters> =
+    unsafe { StaticRef::new(0x4000B000 as *const UartRegisters) };
 
 pub static mut UART0: UART = UART::new(&UART0_BASE);
-//pub static mut UART1: UART = UART::new(&UART1_BASE);
+pub static mut UART1: UART = UART::new(&UART1_BASE);
 
 
 /// Stores an ongoing TX transaction
@@ -181,6 +181,8 @@ impl UART {
     }
 
     pub fn enable_interrupts(&self) {
+        // clear all interrupts
+        self.registers.icr.write(Interrupts::ALL_INTERRUPTS::Clear);
         // set all interrupts
         self.registers.imsc.modify(Interrupts::ALL_INTERRUPTS::Set);
     }
