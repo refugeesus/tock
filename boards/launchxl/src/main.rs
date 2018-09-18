@@ -356,13 +356,17 @@ pub unsafe fn reset_handler() {
     };
 
     nextnode_uart::test();
+        nextnode_uart::test();
+
+    nextnode_uart::test();
+
 
 
     // Create a UartDevice for the console.
     // let console_uart = static_init!(UartDevice, UartDevice::new(uart_mux, true));
     // console_uart.setup();
 
-    cc26x2::uart::UART1.enable_interrupts();
+    //cc26x2::uart::UART1.enable_interrupts();
 
     // let console = static_init!(
     //     capsules::console::Console<UartDevice>,
