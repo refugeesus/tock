@@ -242,18 +242,18 @@ pub unsafe fn reset_handler() {
     let uart_mux = static_init!(
         UartMux<'static>,
         UartMux::new(
-            &cc26x2::uart::UART0,
+            &cc26x2::uart::UART1,
             &mut capsules::virtual_uart::RX_BUF,
             115200
         )
     );
-    hil::uart::UART::set_client(&cc26x2::uart::UART0, uart_mux);
+    hil::uart::UART::set_client(&cc26x2::uart::UART1, uart_mux);
 
     // Create a UartDevice for the console.
     let console_uart = static_init!(UartDevice, UartDevice::new(uart_mux, true));
     console_uart.setup();
 
-    cc26x2::uart::UART0.initialize();
+    cc26x2::uart::UART1.initialize();
 
     let console = static_init!(
         capsules::console::Console<UartDevice>,
@@ -365,7 +365,7 @@ pub unsafe fn reset_handler() {
     // let console_uart = static_init!(UartDevice, UartDevice::new(uart_mux, true));
     // console_uart.setup();
 
-    cc26x2::uart::UART1.enable_interrupts();
+    cc26x2::uart::UART0.enable_interrupts();
 
     // let console = static_init!(
     //     capsules::console::Console<UartDevice>,
