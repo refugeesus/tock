@@ -56,7 +56,21 @@ register_bitfields![
         TX_FIFO_FULL OFFSET(5) NUMBITS(1) []
     ],
     Interrupts [
-        ALL_INTERRUPTS OFFSET(0) NUMBITS(12) []
+        ALL_INTERRUPTS OFFSET(0) NUMBITS(12) [
+            // sets all interrupts without writing 1's to reg with undefined behavior
+            Set =  0b111111110010,
+            // you are allowed to write 0 to everyone
+            Clear = 0x000000 
+        ],
+        CTSIMM OFFSET(1) NUMBITS(1) [], // clear to send interrupt mask
+        RXIM OFFSET(4) NUMBITS(1) [],   // receive interrupt mask
+        TXIM OFFSET(5) NUMBITS(1) [],   // transmit interrupt mask
+        RTIM OFFSET(6) NUMBITS(1) [],   // receive timeout interrupt mask
+        FEIM OFFSET(7) NUMBITS(1) [],   // framing error interrupt mask
+        PEIM OFFSET(8) NUMBITS(1) [],   // parity error interrupt mask
+        BEIM OFFSET(9) NUMBITS(1) [],   // break error interrupt mask
+        OEIM OFFSET(10) NUMBITS(1) [],  // overrun error interrupt mask
+        EOTIM OFFSET(11) NUMBITS(1) [] // end of transmission interrupt mask
     ]
 ];
 
@@ -66,8 +80,8 @@ const UART0_BASE: StaticRef<UartRegisters> =
 const UART1_BASE: StaticRef<UartRegisters> =
     unsafe { StaticRef::new(0x4000B000 as *const UartRegisters) };
 
-pub static mut UART0: UART = UART::new(UART0_BASE);
-pub static mut UART1: UART = UART::new(UART1_BASE);
+pub static mut UART0: UART = UART::new(&UART0_BASE);
+pub static mut UART1: UART = UART::new(&UART1_BASE);
 
 
 /// Stores an ongoing TX transaction
@@ -82,13 +96,13 @@ struct Transaction {
 }
 
 pub struct UART {
-    registers: StaticRef<UartRegisters>,
+    registers: &'static StaticRef<UartRegisters>,
     client: OptionalCell<&'static uart::Client>,
     transaction: MapCell<Transaction>,
 }
 
 impl UART {
-    const fn new( base_reg: StaticRef<UartRegisters>) -> UART {
+    const fn new(base_reg: &'static StaticRef<UartRegisters>) -> UART {
         UART {
             registers: base_reg,
             client: OptionalCell::empty(),
@@ -167,14 +181,14 @@ impl UART {
     }
 
     pub fn enable_interrupts(&self) {
-        // Disable all UART interrupts
-        self.registers.imsc.modify(Interrupts::ALL_INTERRUPTS::SET);
+        // set all interrupts
+        self.registers.imsc.modify(Interrupts::ALL_INTERRUPTS::Set);
     }
 
-    /// Clears all interrupts related to UART.
+    // clears all interrupts related to UART.
     pub fn handle_interrupt(&self) {
         // Clear interrupts
-        self.registers.icr.write(Interrupts::ALL_INTERRUPTS::SET);
+        self.registers.icr.write(Interrupts::ALL_INTERRUPTS::Set);
 
         self.transaction.take().map(|mut transaction| {
             transaction.index += 1;

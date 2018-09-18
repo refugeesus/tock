@@ -1,4 +1,4 @@
-use cortexm4::{generic_isr, nvic, svc_handler, systick_handler};
+use cortexm4::{generic_isr, nvic, svc_handler, systick_handler, hard_fault_handler};
 
 extern "C" {
     // Symbols defined in the linker file
@@ -18,14 +18,14 @@ unsafe extern "C" fn unhandled_interrupt() {
     'loop0: loop {}
 }
 
-unsafe extern "C" fn hard_fault_handler() {
-    'loop0: loop {}
-}
+// unsafe extern "C" fn hard_fault_handler() {
+//     'loop0: loop {}
+// }
 
 #[link_section = ".vectors"]
 // used Ensures that the symbol is kept until the final binary
 #[used]
-pub static BASE_VECTORS: [unsafe extern "C" fn(); 50] = [
+pub static BASE_VECTORS: [unsafe extern "C" fn(); 54] = [
     _estack,
     reset_handler,
     unhandled_interrupt, // NMI
@@ -47,9 +47,9 @@ pub static BASE_VECTORS: [unsafe extern "C" fn(); 50] = [
     generic_isr,         // RF Core Command & Packet Engine 1
     generic_isr,         // AON SpiSplave Rx, Tx and CS
     generic_isr,         // AON RTC
-    generic_isr,         // UART0 Rx and Tx
-    generic_isr,         // AUX software event 0
-    generic_isr,         // SSI0 Rx and Tx
+    generic_isr,         // 21 UART0 Rx and Tx
+    generic_isr,         // 22 AUX software event 0
+    generic_isr,         // 23 SSI0 Rx and Tx
     generic_isr,         // SSI1 Rx and Tx
     generic_isr,         // RF Core Command & Packet Engine 0
     generic_isr,         // RF Core Hardware
@@ -74,10 +74,14 @@ pub static BASE_VECTORS: [unsafe extern "C" fn(); 50] = [
     generic_isr,         // AON programmable 0
     generic_isr,         // Dynamic Programmable interrupt
     // source (Default: PRCM)
-    generic_isr, // AUX Comparator A
-    generic_isr, // AUX ADC new sample or ADC DMA
+    generic_isr,         // AUX Comparator A
+    generic_isr,         // AUX ADC new sample or ADC DMA
     // done, ADC underflow, ADC overflow
-    generic_isr, // TRNG event
+    generic_isr,            // TRNG event (hw_ints.h 49)
+    generic_isr,
+    generic_isr,
+    generic_isr, // 52 allegedly UART1 (http://e2e.ti.com/support/wireless_connectivity/proprietary_sub_1_ghz_simpliciti/f/156/t/662981?CC1312R-UART1-can-t-work-correctly-in-sensor-oad-cc1312lp-example-on-both-cc1312-launchpad-and-cc1352-launchpad)
+    generic_isr,
 ];
 
 #[no_mangle]
