@@ -1,27 +1,30 @@
 use kernel::hil::uart;
 use kernel::hil::uart::{UART, Client};
 
-pub static mut WRITE_BUF: [u8; 64] = [0; 64];
-pub static mut READ_BUF: [u8; 64] = [0; 64];
+const DEFAULT_BAUD: u32 = 115200;
+pub static mut WRITE_BUF: [u8; 32] = [0; 32];
+pub static mut READ_BUF: [u8; 32] = [0; 32];
 
 pub struct NextnodeUart<'a, U: UART>{
     uart: &'a U,
-    baud_rate: u32,
-    tx_buffer: &'static mut [u8],
-    rx_buffer: &'static mut [u8],
+    baud: u32
 }
 
 impl<U: UART> NextnodeUart<'a, U> {
 
-    // pub fn new(uart: &'a U, baud_rate: u32) -> NextnodeUart<'a, U>{
-    //      debug_verbose!("Here I am.");
-    //      NextnodeUart{ uart: &uart }
-    // }
+    pub fn new(uart: &'a U) -> NextnodeUart<'a, U>{
+         debug_verbose!("Here I am.");
+
+        uart.configure(uart::UARTParameters {
+            baud_rate: DEFAULT_BAUD,
+            stop_bits: uart::StopBits::One,
+            parity: uart::Parity::None,
+            hw_flow_control: false,
+        });
+        NextnodeUart{ uart: &uart , baud: DEFAULT_BAUD}
+    }
 }
 
-pub fn test(){
-    debug_verbose!("hi");
-}
 
 impl<U: UART> Client for NextnodeUart<'a, U> {
 
@@ -30,9 +33,9 @@ impl<U: UART> Client for NextnodeUart<'a, U> {
     }
 
     fn receive_complete(&self, buffer: &'static mut [u8], rx_len: usize, error: uart::Error) {
-         debug_verbose!("\r\n{:?}", buffer);
-
-
+         debug_verbose!("{:?}", buffer);
+         self.uart.receive(buffer, 32);
+         //UART::set_client(self.uart, self);
     }
     //     self.rx_in_progress
     //         .take()
