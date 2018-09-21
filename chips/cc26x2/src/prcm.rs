@@ -113,12 +113,12 @@ register_bitfields![
     u32,
     VDControl [
         // SPARE1 (bits 1-31)
-        ULDO              OFFSET(0) NUMBITS(1) []
+        ULDO            OFFSET(0) NUMBITS(1) []
     ],
     ClockLoad [
         // RESERVED (bits 2-31)
-        LOAD_DONE   OFFSET(1) NUMBITS(1) [],
-        LOAD        OFFSET(0) NUMBITS(1) []
+        LOAD_DONE       OFFSET(1) NUMBITS(1) [],
+        LOAD            OFFSET(0) NUMBITS(1) []
     ],
     SECDMAClockGate [
         //RESERVED (bits 25-31)
@@ -132,11 +132,11 @@ register_bitfields![
     ],
     ClockGate [
         // RESERVED (bits 1-31)
-        CLK_EN      OFFSET(0) NUMBITS(1) []
+        CLK_EN          OFFSET(0) NUMBITS(1) []
     ],
     ClockGate2 [
         // RESERVED (bits 1-31)
-        CLK_EN      OFFSET(0) NUMBITS(2) [
+        CLK_EN          OFFSET(0) NUMBITS(2) [
             Set0 = 0b1,
             Set1 = 0b10,
             SetAll = 0b11,
@@ -145,31 +145,31 @@ register_bitfields![
     ],
     PowerDomain0 [
         // RESERVED (bits 3-31)
-        PERIPH_ON   OFFSET(2) NUMBITS(1) [],
-        SERIAL_ON   OFFSET(1) NUMBITS(1) [],
-        RFC_ON      OFFSET(0) NUMBITS(1) []
+        PERIPH_ON       OFFSET(2) NUMBITS(1) [],
+        SERIAL_ON       OFFSET(1) NUMBITS(1) [],
+        RFC_ON          OFFSET(0) NUMBITS(1) []
     ],
     PowerDomainSingle [
         // RESERVED (bits 1-31)
-        ON          OFFSET(0) NUMBITS(1) []
+        ON              OFFSET(0) NUMBITS(1) []
     ],
     PowerDomainStatus0 [
         // RESERVED (bits 1-31)
-        PERIPH_ON   OFFSET(2) NUMBITS(1) [],
-        SERIAL_ON   OFFSET(1) NUMBITS(1) [],
-        RFC_ON      OFFSET(0) NUMBITS(1) []
+        PERIPH_ON       OFFSET(2) NUMBITS(1) [],
+        SERIAL_ON       OFFSET(1) NUMBITS(1) [],
+        RFC_ON          OFFSET(0) NUMBITS(1) []
     ],
     PowerDomain1 [
         // RESERVED (bits 1-31)
-        VIMS_ON   OFFSET(2) NUMBITS(1) [],
-        RFC_ON   OFFSET(1) NUMBITS(1) [],
-        CPU_ON      OFFSET(0) NUMBITS(1) []
+        VIMS_ON         OFFSET(2) NUMBITS(1) [],
+        RFC_ON          OFFSET(1) NUMBITS(1) [],
+        CPU_ON          OFFSET(0) NUMBITS(1) []
     ],
     PowerDomainStatus1 [
         // RESERVED (bits 3-31)
-        VIMS_ON     OFFSET(2) NUMBITS(1) [],
-        RFC_ON      OFFSET(1) NUMBITS(1) [],
-        CPU_ON      OFFSET(0) NUMBITS(1) []
+        VIMS_ON         OFFSET(2) NUMBITS(1) [],
+        RFC_ON          OFFSET(1) NUMBITS(1) [],
+        CPU_ON          OFFSET(0) NUMBITS(1) []
     ]
 ];
 

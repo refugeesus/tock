@@ -1,30 +1,46 @@
 use kernel::hil::uart;
 use kernel::hil::uart::{UART, Client};
+use kernel::ReturnCode;
+use kernel::{AppId, Callback, Driver, Grant};
 
 const DEFAULT_BAUD: u32 = 115200;
-pub static mut WRITE_BUF: [u8; 32] = [0; 32];
-pub static mut READ_BUF: [u8; 32] = [0; 32];
+
+#[derive(Default)]
+pub struct App {
+    callback: Option<Callback>,
+    //subscribed: bool,
+}
 
 pub struct NextnodeUart<'a, U: UART>{
     uart: &'a U,
-    baud: u32
+    baud: u32,
+    apps: Grant<App>,
 }
 
 impl<U: UART> NextnodeUart<'a, U> {
 
-    pub fn new(uart: &'a U) -> NextnodeUart<'a, U>{
-         debug_verbose!("Here I am.");
-
+    pub fn new(
+        uart: &'a U,
+        grant: Grant<App>,
+    ) -> NextnodeUart<'a, U>{
         uart.configure(uart::UARTParameters {
             baud_rate: DEFAULT_BAUD,
             stop_bits: uart::StopBits::One,
             parity: uart::Parity::None,
             hw_flow_control: false,
         });
-        NextnodeUart{ uart: &uart , baud: DEFAULT_BAUD}
+        NextnodeUart{ uart: &uart , baud: DEFAULT_BAUD, apps: grant}
     }
-}
 
+    fn configure_callback(&self, callback: Option<Callback>, app_id: AppId) -> ReturnCode {
+        self.apps
+            .enter(app_id, |app, _| {
+                app.callback = callback;
+                ReturnCode::SUCCESS
+            }).unwrap_or_else(|err| err.into())
+    }
+
+}
 
 impl<U: UART> Client for NextnodeUart<'a, U> {
 
@@ -33,48 +49,49 @@ impl<U: UART> Client for NextnodeUart<'a, U> {
     }
 
     fn receive_complete(&self, buffer: &'static mut [u8], rx_len: usize, error: uart::Error) {
-         debug_verbose!("{:?}", buffer);
-         self.uart.receive(buffer, 32);
-         //UART::set_client(self.uart, self);
-    }
-    //     self.rx_in_progress
-    //         .take()
-    //         .map(|appid| {
-    //             self.apps
-    //                 .enter(appid, |app, _| {
-    //                     app.read_callback.map(|mut cb| {
-    //                         // An iterator over the returned buffer yielding only the first `rx_len`
-    //                         // bytes
-    //                         let rx_buffer = buffer.iter().take(rx_len);
-    //                         match error {
-    //                             uart::Error::CommandComplete | uart::Error::Aborted => {
-    //                                 // Receive some bytes, signal error type and return bytes to process buffer
-    //                                 if let Some(mut app_buffer) = app.read_buffer.take() {
-    //                                     for (a, b) in app_buffer.iter_mut().zip(rx_buffer) {
-    //                                         *a = *b;
-    //                                     }
-    //                                     let rettype = if error == uart::Error::CommandComplete {
-    //                                         ReturnCode::SUCCESS
-    //                                     } else {
-    //                                         ReturnCode::ECANCEL
-    //                                     };
-    //                                     cb.schedule(From::from(rettype), rx_len, 0);
-    //                                 } else {
-    //                                     // Oops, no app buffer
-    //                                     cb.schedule(From::from(ReturnCode::EINVAL), 0, 0);
-    //                                 }
-    //                             }
-    //                             _ => {
-    //                                 // Some UART error occurred
-    //                                 cb.schedule(From::from(ReturnCode::FAIL), 0, 0);
-    //                             }
-    //                         }
-    //                     });
-    //                 }).unwrap_or_default();
-    //         }).unwrap_or_default();
+        for n in 0..rx_len {
+            for cntr in self.apps.iter() {
+                cntr.enter(|app, _| {
+                    //if app.subscribed {
+                        //app.subscribed = false;
+                        app.callback.map(|mut cb| cb.schedule(buffer[n] as usize, 0, 0));
+                    //}
+                });
+            }
+        }
 
-    //     // Whatever happens, we want to make sure to replace the rx_buffer for future transactions
-    //     self.rx_buffer.replace(buffer);
-    // }
+         self.uart.receive(buffer, 4);
+    }
+
+
 }
 
+
+
+/// Syscall Number
+pub const DRIVER_NUM: usize = 0xA3_0000;
+const RECEIVE_BYTE: usize = 1;
+
+// System Call implementation
+impl<U: UART> Driver for NextnodeUart<'a, U> {
+    fn subscribe(
+        &self,
+        subscribe_num: usize,
+        callback: Option<Callback>,
+        app_id: AppId,
+    ) -> ReturnCode {
+        match subscribe_num {
+            // subscribe to temperature reading with callback
+            1 => self.configure_callback(callback, app_id),
+            _ => ReturnCode::ENOSUPPORT,
+        }
+    }
+
+    fn command(&self, command_num: usize, _: usize, _: usize, appid: AppId) -> ReturnCode {
+        match command_num {
+            // check whether the driver exists!!
+            0 => ReturnCode::SUCCESS,
+            _ => ReturnCode::ENOSUPPORT,
+        }
+    }
+}

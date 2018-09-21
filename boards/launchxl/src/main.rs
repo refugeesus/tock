@@ -357,16 +357,16 @@ pub unsafe fn reset_handler() {
 
 
     cc26x2::uart::UART1.enable_interrupts();
-
     let nextnode_uart = static_init!(
         nextnode_uart::NextnodeUart<'static, cc26x2::uart::UART>,
-        nextnode_uart::NextnodeUart::new(&cc26x2::uart::UART1)
-        );
+        nextnode_uart::NextnodeUart::new(
+            &cc26x2::uart::UART1,
+            board_kernel.create_grant(&memory_allocation_capability)
+        )
+    );
     hil::uart::UART::set_client(&cc26x2::uart::UART1, nextnode_uart);
-    cc26x2::uart::UART1.set_rx_buf(&mut capsules::nextnode_uart::READ_BUF);
+    cc26x2::uart::UART1.set_rx_buf(&mut cc26x2::uart::UART1_RX_BUF);
     cc26x2::uart::UART1.send_byte(0x21);
-
-
 
     let mut chip = cc26x2::chip::Cc26X2::new();
 

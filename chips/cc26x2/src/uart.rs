@@ -100,8 +100,14 @@ const UART0_BASE: StaticRef<UartRegisters> =
 const UART1_BASE: StaticRef<UartRegisters> =
     unsafe { StaticRef::new(0x4000B000 as *const UartRegisters) };
 
+
+pub static mut UART0_RX_BUF: [u8; 4] = [0; 4];
+pub static mut UART1_RX_BUF: [u8; 4] = [0; 4];
+
 pub static mut UART0: UART = UART::new(&UART0_BASE);
 pub static mut UART1: UART = UART::new(&UART1_BASE);
+
+
 
 /// Stores an ongoing TX transaction
 struct Transaction {
@@ -217,7 +223,7 @@ impl UART {
 
         // handle RX interrupt
         if (isr_status.read(Interrupts::RX) != 0) ||  (isr_status.read(Interrupts::RX_TIMEOUT) != 0){
-                //debug!(">");
+    
                 if let Some(rx_buf) = self.rx_buf.take() {
                     let mut rx_len: usize= 0;
                     // read as much data as available
@@ -228,7 +234,7 @@ impl UART {
                             //panic!("We have a UART Overrun, Break, Parity, or Framing Error")
                         }
                         let cur_byte = read_byte as u8;
-                        debug!("{}", cur_byte as char);
+                        debug_str!("{}", cur_byte as char);
                         rx_buf[rx_len] = cur_byte;
                         rx_len += 1;
                     self.client.map(move |client| {
