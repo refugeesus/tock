@@ -237,7 +237,6 @@ pub unsafe fn reset_handler() {
     }
 
     // UART
-
     // Create a shared UART channel for the console and for kernel debug.
     let uart_mux = static_init!(
         UartMux<'static>,
