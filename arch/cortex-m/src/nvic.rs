@@ -106,7 +106,12 @@ impl Nvic {
     pub fn clear_pending(&self) {
         let nvic: &NvicRegisters = &*NVIC_BASE_ADDRESS;
         let idx = self.0 as usize;
-
         nvic.icpr[idx / 32].set(1 << (self.0 & 31));
     }
+
+    /// return index in interrupt vector table
+    pub fn get_index(&self) -> usize{
+        self.0 as usize + 16
+    }
+
 }

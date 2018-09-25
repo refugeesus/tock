@@ -33,6 +33,7 @@ impl<U: UART> NextnodeUart<'a, U> {
     }
 
     fn configure_callback(&self, callback: Option<Callback>, app_id: AppId) -> ReturnCode {
+        debug!("Subscribing cb");
         self.apps
             .enter(app_id, |app, _| {
                 app.callback = callback;
@@ -50,7 +51,9 @@ impl<U: UART> Client for NextnodeUart<'a, U> {
 
     fn receive_complete(&self, buffer: &'static mut [u8], rx_len: usize, error: uart::Error) {
         for n in 0..rx_len {
+            debug_str!("{}", buffer[n] as char);
             for cntr in self.apps.iter() {
+                
                 cntr.enter(|app, _| {
                     //if app.subscribed {
                         //app.subscribed = false;
@@ -80,9 +83,11 @@ impl<U: UART> Driver for NextnodeUart<'a, U> {
         callback: Option<Callback>,
         app_id: AppId,
     ) -> ReturnCode {
+        debug!("Received subscribe request");
+
         match subscribe_num {
             // subscribe to temperature reading with callback
-            1 => self.configure_callback(callback, app_id),
+            RECEIVE_BYTE => self.configure_callback(callback, app_id),
             _ => ReturnCode::ENOSUPPORT,
         }
     }

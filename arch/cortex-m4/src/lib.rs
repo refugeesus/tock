@@ -69,6 +69,7 @@ pub unsafe extern "C" fn generic_isr() {
     cmp lr, #0xfffffffd
     bne _ggeneric_isr_no_stacking
 
+
     /* We need the most recent kernel's version of r1, which points */
     /* to the Process struct's stored registers field. The kernel's r1 */
     /* lives in the second word of the hardware stacked registers on MSP */
@@ -116,6 +117,34 @@ pub unsafe extern "C" fn generic_isr() {
      *
      *  */
     str r0, [r3, r2, lsl #2]"
+    );
+}
+
+#[cfg(target_os = "none")]
+#[naked]
+/// don't disables the NVIC but switch to the kernel.
+pub unsafe extern "C" fn simple_isr() {
+    asm!(
+        "
+    /* Skip saving process state if not coming from user-space */
+    cmp lr, #0xfffffffd
+    bne _exit
+
+    /* We need the most recent kernel's version of r1, which points */
+    /* to the Process struct's stored registers field. The kernel's r1 */
+    /* lives in the second word of the hardware stacked registers on MSP */
+    mov r1, sp
+    ldr r1, [r1, #4]
+    stmia r1, {r4-r11}
+
+    /* Set thread mode to privileged */
+    mov r0, #0
+    msr CONTROL, r0
+
+    movw LR, #0xFFF9
+    movt LR, #0xFFFF
+  _exit:
+    bx lr"
     );
 }
 

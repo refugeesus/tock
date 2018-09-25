@@ -21,11 +21,13 @@ unsafe extern "C" fn unhandled_interrupt() {
 // unsafe extern "C" fn hard_fault_handler() {
 //     'loop0: loop {}
 // }
+use uart;
+
 
 #[link_section = ".vectors"]
 // used Ensures that the symbol is kept until the final binary
 #[used]
-pub static BASE_VECTORS: [unsafe extern "C" fn(); 54] = [
+pub static mut BASE_VECTORS: [unsafe extern "C" fn(); 54] = [
     _estack,
     reset_handler,
     unhandled_interrupt, // NMI
@@ -80,7 +82,7 @@ pub static BASE_VECTORS: [unsafe extern "C" fn(); 54] = [
     generic_isr,            // TRNG event (hw_ints.h 49)
     generic_isr,
     generic_isr,
-    generic_isr, // 52 allegedly UART1 (http://e2e.ti.com/support/wireless_connectivity/proprietary_sub_1_ghz_simpliciti/f/156/t/662981?CC1312R-UART1-can-t-work-correctly-in-sensor-oad-cc1312lp-example-on-both-cc1312-launchpad-and-cc1352-launchpad)
+    uart::UART1_ISR, // 52 allegedly UART1 (http://e2e.ti.com/support/wireless_connectivity/proprietary_sub_1_ghz_simpliciti/f/156/t/662981?CC1312R-UART1-can-t-work-correctly-in-sensor-oad-cc1312lp-example-on-both-cc1312-launchpad-and-cc1352-launchpad)
     generic_isr,
 ];
 

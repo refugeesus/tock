@@ -100,14 +100,47 @@ const UART0_BASE: StaticRef<UartRegisters> =
 const UART1_BASE: StaticRef<UartRegisters> =
     unsafe { StaticRef::new(0x4000B000 as *const UartRegisters) };
 
+use cortexm4::nvic;
+use peripheral_interrupts;
+pub static UART0_NVIC: nvic::Nvic = unsafe { nvic::Nvic::new(peripheral_interrupts::UART0) };
+pub static UART1_NVIC: nvic::Nvic = unsafe { nvic::Nvic::new(peripheral_interrupts::UART1) };
 
 pub static mut UART0_RX_BUF: [u8; 4] = [0; 4];
 pub static mut UART1_RX_BUF: [u8; 4] = [0; 4];
 
-pub static mut UART0: UART = UART::new(&UART0_BASE);
-pub static mut UART1: UART = UART::new(&UART1_BASE);
+pub static mut UART0: UART = UART::new(&UART0_BASE, &UART0_NVIC);
+pub static mut UART1: UART = UART::new(&UART1_BASE, &UART1_NVIC);
+
+use cortexm4::simple_isr;
 
 
+
+// handle RX interrupt
+pub extern "C" fn UART1_ISR() {
+
+        unsafe { simple_isr() };
+
+        // get a copy of the masked interrupt status
+        let isr_status = UART1_BASE.mis.extract();
+        if (isr_status.read(Interrupts::RX) != 0) ||  (isr_status.read(Interrupts::RX_TIMEOUT) != 0){
+
+                let mut rx_buf = unsafe { UART1.rx_buf.take() };
+                let mut rx_len = 0;
+                loop {
+                    let read_byte = UART1_BASE.dr.get();
+                    let cur_byte = read_byte as u8;
+                    if let Some(ref mut buf) = rx_buf {
+                        buf[rx_len] = cur_byte;
+                        rx_len += 1;
+                    }
+
+                    if UART1_BASE.fr.read(Flags::RX_FIFO_EMPTY) != 0 {
+                        break;
+                    }
+                }
+        }
+        UART1_BASE.icr.write(Interrupts::RX.val(1));
+}
 
 /// Stores an ongoing TX transaction
 struct Transaction {
@@ -120,26 +153,31 @@ struct Transaction {
     index: usize,
 }
 
+
 pub struct UART {
     registers: &'static StaticRef<UartRegisters>,
     client: OptionalCell<&'static uart::Client>,
     transaction: MapCell<Transaction>,
     rx_buf: MapCell<&'static mut [u8]>,
+    nvic: &'static nvic::Nvic,
 }
 
+use crt1;
 impl UART {
-    const fn new(base_reg: &'static StaticRef<UartRegisters>) -> UART {
+    const fn new(base_reg: &'static StaticRef<UartRegisters>, nvic: &'static nvic::Nvic) -> UART {
+        
+
         UART {
             registers: base_reg,
             client: OptionalCell::empty(),
             transaction: MapCell::empty(),
-            rx_buf: MapCell::empty()
+            rx_buf: MapCell::empty(),
+            nvic: nvic
         }
+
+
     }
 
-    pub fn set_rx_buf(&mut self, rx_buf: &'static mut [u8]){
-        self.rx_buf.put(rx_buf);
-    }
     /// Initialize the UART hardware.
     ///
     /// This function needs to be run before the UART module is used.
@@ -178,6 +216,13 @@ impl UART {
         ReturnCode::SUCCESS
     }
 
+    // pub fn set_custom_nvic(& self) {
+    //     self.nvic.disable();
+    //     unsafe { crt1::BASE_VECTORS[self.nvic.get_index()] = UART1_ISR };
+    //     self.nvic.clear_pending();
+    //     self.nvic.disable();
+    // }
+
     fn power_and_clock(&self) {
         prcm::Power::enable_domain(prcm::PowerDomain::Serial);
         while !prcm::Power::is_enabled(prcm::PowerDomain::Serial) {}
@@ -209,6 +254,16 @@ impl UART {
         );
     }
 
+    pub fn rx_only_int(&self) {
+        // clear all
+        self.registers.icr.write(Interrupts::ALL_INTERRUPTS::Clear);
+        // disable all interrupts
+        self.registers.imsc.write(Interrupts::ALL_INTERRUPTS::Clear);
+        self.registers.imsc.write(Interrupts::RX.val(1));
+
+    }
+
+
     pub fn enable_interrupts(&self) {
         // clear all
         self.registers.icr.write(Interrupts::ALL_INTERRUPTS::Clear);
@@ -223,30 +278,35 @@ impl UART {
 
         // handle RX interrupt
         if (isr_status.read(Interrupts::RX) != 0) ||  (isr_status.read(Interrupts::RX_TIMEOUT) != 0){
-    
-                if let Some(rx_buf) = self.rx_buf.take() {
-                    let mut rx_len: usize= 0;
-                    // read as much data as available
-                    //while self.registers.fr.read(Flags::RX_FIFO_EMPTY) != 0 {
-                        let read_byte = self.registers.dr.get();
-                        // top 4 bits are status
-                        if (read_byte >> 8) != 0 {
-                            //panic!("We have a UART Overrun, Break, Parity, or Framing Error")
-                        }
-                        let cur_byte = read_byte as u8;
-                        debug_str!("{}", cur_byte as char);
-                        rx_buf[rx_len] = cur_byte;
+
+                let mut rx_buf = self.rx_buf.take();
+                let mut rx_len = 0;
+                loop {
+                    let read_byte = self.registers.dr.get();
+                    // top 4 bits are status
+                    if ((read_byte >> 8) & 0xF) != 0 {
+                        //panic!("We have a UART Overrun, Break, Parity, or Framing Error")
+                    }
+                    let cur_byte = read_byte as u8;
+
+                    if let Some(ref mut buf) = rx_buf {
+                        buf[rx_len] = cur_byte;
                         rx_len += 1;
+                    }
+                    
+                    if self.registers.fr.read(Flags::RX_FIFO_EMPTY) != 0 {
+                        break;
+                    }
+                }
+
+                if let Some(mut buf) = rx_buf {
                     self.client.map(move |client| {
                         client.receive_complete(
-                            rx_buf,
+                            buf,
                             rx_len,
                             kernel::hil::uart::Error::CommandComplete
                         );
                     });
-                }
-                else{
-                    self.registers.dr.get();
                 }
         }
         // else assumed to be write

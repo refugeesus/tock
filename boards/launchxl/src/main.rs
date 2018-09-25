@@ -50,6 +50,7 @@ pub struct Platform {
         capsules::virtual_alarm::VirtualMuxAlarm<'static, cc26x2::rtc::Rtc>,
     >,
     rng: &'static capsules::rng::SimpleRng<'static, cc26x2::trng::Trng>,
+    nextnode_uart: &'static nextnode_uart::NextnodeUart<'static, cc26x2::uart::UART>
 }
 
 impl kernel::Platform for Platform {
@@ -345,17 +346,8 @@ pub unsafe fn reset_handler() {
     );
     cc26x2::trng::TRNG.set_client(rng);
 
-    let launchxl = Platform {
-        console,
-        gpio,
-        led,
-        button,
-        alarm,
-        rng,
-    };
-
-
-    cc26x2::uart::UART1.enable_interrupts();
+    cc26x2::uart::UART1.rx_only_int();
+    
     let nextnode_uart = static_init!(
         nextnode_uart::NextnodeUart<'static, cc26x2::uart::UART>,
         nextnode_uart::NextnodeUart::new(
@@ -363,9 +355,19 @@ pub unsafe fn reset_handler() {
             board_kernel.create_grant(&memory_allocation_capability)
         )
     );
-    hil::uart::UART::set_client(&cc26x2::uart::UART1, nextnode_uart);
-    cc26x2::uart::UART1.set_rx_buf(&mut cc26x2::uart::UART1_RX_BUF);
-    cc26x2::uart::UART1.send_byte(0x21);
+    kernel::hil::uart::UART::set_client(&cc26x2::uart::UART1, nextnode_uart);
+    kernel::hil::uart::UART::receive(&cc26x2::uart::UART1, &mut cc26x2::uart::UART1_RX_BUF, 4);
+
+
+    let launchxl = Platform {
+        console,
+        gpio,
+        led,
+        button,
+        alarm,
+        rng,
+        nextnode_uart
+    };
 
     let mut chip = cc26x2::chip::Cc26X2::new();
 
@@ -375,7 +377,7 @@ pub unsafe fn reset_handler() {
     }
 
     let ipc = &kernel::ipc::IPC::new(board_kernel, &memory_allocation_capability);
-
+    debug!("Loading processes");
     kernel::procs::load_processes(
         board_kernel,
         &cortexm4::syscall::SysCall::new(),
