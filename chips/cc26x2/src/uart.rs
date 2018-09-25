@@ -143,9 +143,7 @@ macro_rules! uart_isr {
 pub extern "C" fn uart1_isr() {
     unsafe { 
         simple_isr();
-
         uart_isr!(UART1, UART1_ISR_RX_BUF, UART1_ISR_RX_LEN);
-
         UART1.nvic.clear_pending();
         UART1.nvic_event.set(true) 
    };
@@ -222,13 +220,6 @@ impl UART {
 
         ReturnCode::SUCCESS
     }
-
-    // pub fn set_custom_nvic(& self) {
-    //     self.nvic.disable();
-    //     unsafe { crt1::BASE_VECTORS[self.nvic.get_index()] = UART1_ISR };
-    //     self.nvic.clear_pending();
-    //     self.nvic.disable();
-    // }
 
     fn power_and_clock(&self) {
         prcm::Power::enable_domain(prcm::PowerDomain::Serial);
