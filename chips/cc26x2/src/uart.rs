@@ -111,37 +111,36 @@ pub static mut UART1_RX_BUF: [u8; 4] = [0; 4];
 pub static mut UART0: UART = UART::new(&UART0_BASE, &UART0_NVIC);
 pub static mut UART1: UART = UART::new(&UART1_BASE, &UART1_NVIC);
 
+pub static mut UART1_ISR_RX_BUF: [u8; 4] = [0; 4];
+pub static mut UART1_ISR_RX_LEN: usize = 0;
+
 use cortexm4::simple_isr;
 
 
 
 // handle RX interrupt
 pub extern "C" fn UART1_ISR() {
-
         unsafe { simple_isr() };
 
         // get a copy of the masked interrupt status
         let isr_status = UART1_BASE.mis.extract();
         if (isr_status.read(Interrupts::RX) != 0) ||  (isr_status.read(Interrupts::RX_TIMEOUT) != 0){
-
-                // let mut rx_buf = unsafe { UART1.rx_buf.take() };
-                // let mut rx_len = 0;
                 loop {
                     let read_byte = UART1_BASE.dr.get();
                     let cur_byte = read_byte as u8;
-                    // if let Some(ref mut buf) = rx_buf {
-                    //     buf[rx_len] = cur_byte;
-                    //     rx_len += 1;
-                    // }
-
+                    unsafe {
+                        UART1_ISR_RX_BUF[UART1_ISR_RX_LEN] = cur_byte;
+                        UART1_ISR_RX_LEN += 1;
+                    }
                     if UART1_BASE.fr.read(Flags::RX_FIFO_EMPTY) != 0 {
                         break;
                     }
                 }
-
         }
+        
         UART1_NVIC.clear_pending();
         UART1_BASE.icr.write(Interrupts::RX.val(1));
+        unsafe { UART1.nvic_event.set(true) };
 }
 
 /// Stores an ongoing TX transaction
@@ -155,29 +154,28 @@ struct Transaction {
     index: usize,
 }
 
+use kernel::common::cells::VolatileCell;
 
 pub struct UART {
     registers: &'static StaticRef<UartRegisters>,
     client: OptionalCell<&'static uart::Client>,
     transaction: MapCell<Transaction>,
     rx_buf: MapCell<&'static mut [u8]>,
-    nvic: &'static nvic::Nvic,
+    pub nvic: &'static nvic::Nvic,
+    pub nvic_event: VolatileCell<bool>
 }
 
 use crt1;
 impl UART {
     const fn new(base_reg: &'static StaticRef<UartRegisters>, nvic: &'static nvic::Nvic) -> UART {
-        
-
         UART {
             registers: base_reg,
             client: OptionalCell::empty(),
             transaction: MapCell::empty(),
             rx_buf: MapCell::empty(),
-            nvic: nvic
+            nvic: nvic,
+            nvic_event: VolatileCell::new(false)
         }
-
-
     }
 
     /// Initialize the UART hardware.
@@ -260,8 +258,10 @@ impl UART {
         // clear all
         self.registers.icr.write(Interrupts::ALL_INTERRUPTS::Clear);
         // disable all interrupts
-        self.registers.imsc.write(Interrupts::ALL_INTERRUPTS::Clear);
-        self.registers.imsc.write(Interrupts::RX.val(1));
+        self.registers.imsc.modify(Interrupts::ALL_INTERRUPTS::Set);
+
+        // self.registers.imsc.write(Interrupts::ALL_INTERRUPTS::Clear);
+        // self.registers.imsc.write(Interrupts::RX.val(1));
 
     }
 
@@ -333,6 +333,31 @@ impl UART {
         // Clear interrupts
         self.registers.icr.write(Interrupts::ALL_INTERRUPTS::Set);
 
+    }
+
+    pub fn handle_event(&self) {
+
+        if let Some(mut buf) = self.rx_buf.take() {
+            let len;
+            unsafe { 
+                len = UART1_ISR_RX_LEN;
+                for i in 0..len {
+                    buf[i] = UART1_ISR_RX_BUF[i];
+                }
+                UART1_ISR_RX_LEN = 0;
+            }
+            self.nvic.enable();
+
+            self.client.map(move |client| {
+                client.receive_complete(
+                    buf,
+                    len,
+                    kernel::hil::uart::Error::CommandComplete
+                );
+            });
+
+            
+        }
     }
 
     /// Transmits a single byte if the hardware is ready.

@@ -9,6 +9,7 @@ use uart;
 pub struct Cc26X2 {
     mpu: cortexm4::mpu::MPU,
     systick: cortexm4::systick::SysTick,
+    nvic_event: u64,
 }
 
 impl Cc26X2 {
@@ -17,6 +18,7 @@ impl Cc26X2 {
             mpu: cortexm4::mpu::MPU::new(),
             // The systick clocks with 48MHz by default
             systick: cortexm4::systick::SysTick::new_with_calibration(48 * 1000000),
+            nvic_event:0 
         }
     }
 }
@@ -51,6 +53,17 @@ impl kernel::Chip for Cc26X2 {
                 n.enable();
             }
         }
+
+        unsafe {
+            uart::UART1.nvic.disable();
+            if uart::UART1.nvic_event.get() { 
+                uart::UART1.handle_event();
+                uart::UART1.nvic_event.set(false) ;
+            };
+            uart::UART1.nvic.enable();
+        }
+
+
     }
 
     fn has_pending_interrupts(&self) -> bool {
