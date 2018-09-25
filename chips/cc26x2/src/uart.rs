@@ -124,21 +124,23 @@ pub extern "C" fn UART1_ISR() {
         let isr_status = UART1_BASE.mis.extract();
         if (isr_status.read(Interrupts::RX) != 0) ||  (isr_status.read(Interrupts::RX_TIMEOUT) != 0){
 
-                let mut rx_buf = unsafe { UART1.rx_buf.take() };
-                let mut rx_len = 0;
+                // let mut rx_buf = unsafe { UART1.rx_buf.take() };
+                // let mut rx_len = 0;
                 loop {
                     let read_byte = UART1_BASE.dr.get();
                     let cur_byte = read_byte as u8;
-                    if let Some(ref mut buf) = rx_buf {
-                        buf[rx_len] = cur_byte;
-                        rx_len += 1;
-                    }
+                    // if let Some(ref mut buf) = rx_buf {
+                    //     buf[rx_len] = cur_byte;
+                    //     rx_len += 1;
+                    // }
 
                     if UART1_BASE.fr.read(Flags::RX_FIFO_EMPTY) != 0 {
                         break;
                     }
                 }
+
         }
+        UART1_NVIC.clear_pending();
         UART1_BASE.icr.write(Interrupts::RX.val(1));
 }
 

@@ -128,7 +128,8 @@ pub unsafe extern "C" fn simple_isr() {
         "
     /* Skip saving process state if not coming from user-space */
     cmp lr, #0xfffffffd
-    bne _exit
+    bne _continue
+
 
     /* We need the most recent kernel's version of r1, which points */
     /* to the Process struct's stored registers field. The kernel's r1 */
@@ -143,8 +144,8 @@ pub unsafe extern "C" fn simple_isr() {
 
     movw LR, #0xFFF9
     movt LR, #0xFFFF
-  _exit:
-    bx lr"
+  _continue:
+  "
     );
 }
 
