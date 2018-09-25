@@ -11,24 +11,22 @@ const MCU_CLOCK: u32 = 48_000_000;
 
 #[repr(C)]
 struct UartRegisters {
-    dr: ReadWrite<u32>,
-    rsr_ecr: ReadWrite<u32>,
-    _reserved0: [u32; 0x4],
-    fr: ReadOnly<u32, Flags::Register>,
-    _reserved1: [u32; 0x2],
-    ibrd: ReadWrite<u32, IntDivisor::Register>,
-    fbrd: ReadWrite<u32, FracDivisor::Register>,
-    lcrh: ReadWrite<u32, LineControl::Register>,
-    ctl: ReadWrite<u32, Control::Register>,
-    ifls: ReadWrite<u32>,
-    imsc: ReadWrite<u32, Interrupts::Register>,
-    ris: ReadOnly<u32, Interrupts::Register>,
-    mis: ReadOnly<u32, Interrupts::Register>,
-    icr: WriteOnly<u32, Interrupts::Register>,
-    dmactl: ReadWrite<u32>,
+    dr: ReadWrite<u32>,                                 // data
+    rsr_ecr: ReadWrite<u32>,                            // status
+    _reserved0: [u32; 0x4],                             // don't write here
+    fr: ReadOnly<u32, Flags::Register>,                 // flag
+    _reserved1: [u32; 0x2],                             // don't write here
+    ibrd: ReadWrite<u32, IntDivisor::Register>,         // integer baud-rate divisor
+    fbrd: ReadWrite<u32, FracDivisor::Register>,        // fractional baud-rate divisor
+    lcrh: ReadWrite<u32, LineControl::Register>,        // line control
+    ctl: ReadWrite<u32, Control::Register>,             // control
+    ifls: ReadWrite<u32, FifoInterrupts::Register>,     // interrupt fifo level select
+    imsc: ReadWrite<u32, Interrupts::Register>,         // interrupt mask set/clear
+    ris: ReadOnly<u32, Interrupts::Register>,           // raw interrupt status
+    mis: ReadOnly<u32, Interrupts::Register>,           // masked interrupt status
+    icr: WriteOnly<u32, Interrupts::Register>,          // interrupt clear
+    dmactl: ReadWrite<u32>,                             // DMA control
 }
-
-pub static mut UART0: UART = UART::new();
 
 register_bitfields![
     u32,
@@ -37,6 +35,7 @@ register_bitfields![
         TX_ENABLE OFFSET(8) NUMBITS(1) [],
         RX_ENABLE OFFSET(9) NUMBITS(1) []
     ],
+
     LineControl [
         FIFO_ENABLE OFFSET(4) NUMBITS(1) [],
         WORD_LENGTH OFFSET(5) NUMBITS(2) [
@@ -53,15 +52,102 @@ register_bitfields![
         DIVISOR OFFSET(0) NUMBITS(6) []
     ],
     Flags [
-        TX_FIFO_FULL OFFSET(5) NUMBITS(1) []
+        CTS OFFSET(0) NUMBITS(1) [],
+        BUSY OFFSET(3) NUMBITS(1) [],
+        RX_FIFO_EMPTY OFFSET(4) NUMBITS(1) [],
+        TX_FIFO_FULL OFFSET(5) NUMBITS(1) [],
+        RX_FIFO_FULL OFFSET(6) NUMBITS(1) [],
+        TX_FIFO_EMPTY OFFSET(7) NUMBITS(1) []
     ],
     Interrupts [
-        ALL_INTERRUPTS OFFSET(0) NUMBITS(12) []
+        ALL_INTERRUPTS OFFSET(0) NUMBITS(12) [
+            // sets all interrupts without writing 1's to reg with undefined behavior
+            Set =  0b111111110010,
+            // you are allowed to write 0 to everyone
+            Clear = 0x000000 
+        ],
+        // CTSIMM OFFSET(1) NUMBITS(1) [], // clear to send interrupt mask
+        RX OFFSET(4) NUMBITS(1) [],   // receive interrupt mask
+        TX OFFSET(5) NUMBITS(1) [],   // transmit interrupt mask
+        RX_TIMEOUT OFFSET(6) NUMBITS(1) [],   // receive timeout interrupt mask
+        // FE OFFSET(7) NUMBITS(1) [],   // framing error interrupt mask
+        // PE OFFSET(8) NUMBITS(1) [],   // parity error interrupt mask
+        // BE OFFSET(9) NUMBITS(1) [],   // break error interrupt mask
+        // OE OFFSET(10) NUMBITS(1) [],  // overrun error interrupt mask
+        END_OF_TRANSMISSION OFFSET(11) NUMBITS(1) [] // end of transmission interrupt mask
+    ],
+    FifoInterrupts [
+        TXSEL OFFSET(0) NUMBITS(3) [
+            OneEighthFull = 0x0,
+            OneQuarterFull = 0x1,
+            HalfFull = 0x2,
+            ThreeQuartersFull = 0x3,
+            SevenEightsFull = 0x7
+        ],
+        TX_FIFO_FULL OFFSET(5) NUMBITS(1) [
+            OneEighthFull = 0x0,
+            OneQuarterFull = 0x1,
+            HalfFull = 0x2,
+            ThreeQuartersFull = 0x3,
+            SevenEightsFull = 0x7
+        ]
     ]
 ];
 
-const UART_BASE: StaticRef<UartRegisters> =
+const UART0_BASE: StaticRef<UartRegisters> =
     unsafe { StaticRef::new(0x40001000 as *const UartRegisters) };
+
+const UART1_BASE: StaticRef<UartRegisters> =
+    unsafe { StaticRef::new(0x4000B000 as *const UartRegisters) };
+
+use cortexm4::nvic;
+use peripheral_interrupts;
+pub static UART0_NVIC: nvic::Nvic = unsafe { nvic::Nvic::new(peripheral_interrupts::UART0) };
+pub static UART1_NVIC: nvic::Nvic = unsafe { nvic::Nvic::new(peripheral_interrupts::UART1) };
+
+pub static mut UART0_RX_BUF: [u8; 4] = [0; 4];
+pub static mut UART1_RX_BUF: [u8; 4] = [0; 4];
+
+pub static mut UART0: UART = UART::new(&UART0_BASE, &UART0_NVIC);
+pub static mut UART1: UART = UART::new(&UART1_BASE, &UART1_NVIC);
+
+pub static mut UART1_ISR_RX_BUF: [u8; 4] = [0; 4];
+pub static mut UART1_ISR_RX_LEN: usize = 0;
+
+use cortexm4::simple_isr;
+
+macro_rules! uart_isr {
+    ($uart:ident, $buf:ident, $len:ident) => {
+        // get a copy of the masked interrupt status
+        let isr_status = $uart.registers.mis.extract();
+        if (isr_status.read(Interrupts::RX) != 0) ||  (isr_status.read(Interrupts::RX_TIMEOUT) != 0){
+                loop {
+                    let read_byte = $uart.registers.dr.get();
+                    let cur_byte = read_byte as u8;
+
+                    $buf[$len] = cur_byte;
+                    $len += 1;
+
+                    if $uart.registers.fr.read(Flags::RX_FIFO_EMPTY) != 0 {
+                        break;
+                    }
+                }
+        }
+        $uart.registers.icr.write(Interrupts::RX.val(1));
+    }
+
+}
+
+
+// handle RX interrupt
+pub extern "C" fn uart1_isr() {
+    unsafe { 
+        simple_isr();
+        uart_isr!(UART1, UART1_ISR_RX_BUF, UART1_ISR_RX_LEN);
+        UART1.nvic.clear_pending();
+        UART1.nvic_event.set(true) 
+   };
+}
 
 /// Stores an ongoing TX transaction
 struct Transaction {
@@ -74,18 +160,26 @@ struct Transaction {
     index: usize,
 }
 
+use kernel::common::cells::VolatileCell;
+
 pub struct UART {
-    registers: StaticRef<UartRegisters>,
+    registers: &'static StaticRef<UartRegisters>,
     client: OptionalCell<&'static uart::Client>,
     transaction: MapCell<Transaction>,
+    rx_buf: MapCell<&'static mut [u8]>,
+    pub nvic: &'static nvic::Nvic,
+    pub nvic_event: VolatileCell<bool>
 }
 
 impl UART {
-    const fn new() -> UART {
+    const fn new(base_reg: &'static StaticRef<UartRegisters>, nvic: &'static nvic::Nvic) -> UART {
         UART {
-            registers: UART_BASE,
+            registers: base_reg,
             client: OptionalCell::empty(),
             transaction: MapCell::empty(),
+            rx_buf: MapCell::empty(),
+            nvic: nvic,
+            nvic_event: VolatileCell::new(false)
         }
     }
 
@@ -112,7 +206,6 @@ impl UART {
 
         // Disable the UART before configuring
         self.disable();
-
         self.set_baud_rate(params.baud_rate);
 
         // Set word length
@@ -159,30 +252,89 @@ impl UART {
         );
     }
 
-    fn enable_interrupts(&self) {
-        // Disable all UART interrupts
-        self.registers.imsc.modify(Interrupts::ALL_INTERRUPTS::SET);
+
+    pub fn enable_interrupts(&self) {
+        // clear all
+        self.registers.icr.write(Interrupts::ALL_INTERRUPTS::Clear);
+        // set all interrupts
+        self.registers.imsc.modify(Interrupts::ALL_INTERRUPTS::Set);
     }
 
-    /// Clears all interrupts related to UART.
+    // clears all interrupts related to UART.
     pub fn handle_interrupt(&self) {
-        // Clear interrupts
-        self.registers.icr.write(Interrupts::ALL_INTERRUPTS::SET);
+        // get a copy of the masked interrupt status
+        let isr_status = self.registers.mis.extract();
 
-        self.transaction.take().map(|mut transaction| {
-            transaction.index += 1;
-            if transaction.index < transaction.length {
-                self.send_byte(transaction.buffer[transaction.index]);
-                self.transaction.put(transaction);
-            } else {
-                self.client.map(move |client| {
-                    client.transmit_complete(
-                        transaction.buffer,
-                        kernel::hil::uart::Error::CommandComplete,
-                    );
-                });
+        // handle RX interrupt
+        if (isr_status.read(Interrupts::RX) != 0) ||  (isr_status.read(Interrupts::RX_TIMEOUT) != 0){
+
+
+                let mut rx_buf = self.rx_buf.take();
+                let mut rx_len = 0;
+
+                if let Some(mut buf) = rx_buf {
+                    uart_isr!(self, buf, rx_len);
+                    self.client.map(move |client| {
+                        client.receive_complete(
+                            buf,
+                            rx_len,
+                            kernel::hil::uart::Error::CommandComplete
+                        );
+                    });
+                }
+                else{
+                    let mut null_buf = [4; 0];
+                    uart_isr!(self, null_buf, rx_len);
+
+                }
+        }
+        // else assumed to be write
+        else {
+            self.transaction.take().map(|mut transaction| {
+                transaction.index += 1;
+                if transaction.index < transaction.length {
+                    self.send_byte(transaction.buffer[transaction.index]);
+                    self.transaction.put(transaction);
+                } else {
+                    self.client.map(move |client| {
+                        client.transmit_complete(
+                            transaction.buffer,
+                            kernel::hil::uart::Error::CommandComplete,
+                        );
+                    });
+                }
+            });
+            
+        }
+
+        // Clear interrupts
+        self.registers.icr.write(Interrupts::ALL_INTERRUPTS::Set);
+
+    }
+
+    pub fn handle_event(&self) {
+
+        if let Some(mut buf) = self.rx_buf.take() {
+            let len;
+            unsafe { 
+                len = UART1_ISR_RX_LEN;
+                for i in 0..len {
+                    buf[i] = UART1_ISR_RX_BUF[i];
+                }
+                UART1_ISR_RX_LEN = 0;
             }
-        });
+            self.nvic.enable();
+
+            self.client.map(move |client| {
+                client.receive_complete(
+                    buf,
+                    len,
+                    kernel::hil::uart::Error::CommandComplete
+                );
+            });
+
+            
+        }
     }
 
     /// Transmits a single byte if the hardware is ready.
@@ -219,7 +371,9 @@ impl kernel::hil::uart::UART for UART {
     }
 
     #[allow(unused)]
-    fn receive(&self, rx_buffer: &'static mut [u8], rx_len: usize) {}
+    fn receive(&self, rx_buffer: &'static mut [u8], _rx_len: usize) {
+        self.rx_buf.put(rx_buffer);
+    }
 
     fn abort_receive(&self) {
         unimplemented!()

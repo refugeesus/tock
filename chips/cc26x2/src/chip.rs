@@ -39,6 +39,7 @@ impl kernel::Chip for Cc26X2 {
                     peripheral_interrupts::GPIO => gpio::PORT.handle_interrupt(),
                     peripheral_interrupts::AON_RTC => rtc::RTC.handle_interrupt(),
                     peripheral_interrupts::UART0 => uart::UART0.handle_interrupt(),
+                    peripheral_interrupts::UART1 => uart::UART1.handle_interrupt(),
                     peripheral_interrupts::I2C => i2c::I2C0.handle_interrupt(),
                     // AON Programmable interrupt
                     // We need to ignore JTAG events since some debuggers emit these
@@ -50,6 +51,17 @@ impl kernel::Chip for Cc26X2 {
                 n.enable();
             }
         }
+
+        unsafe {
+            uart::UART1.nvic.disable();
+            if uart::UART1.nvic_event.get() { 
+                uart::UART1.handle_event();
+                uart::UART1.nvic_event.set(false) ;
+            };
+            uart::UART1.nvic.enable();
+        }
+
+
     }
 
     fn has_pending_interrupts(&self) -> bool {

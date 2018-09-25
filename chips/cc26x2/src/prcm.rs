@@ -73,9 +73,9 @@ struct PrcmRegisters {
     pub i2c_clk_gate_deep_sleep: ReadWrite<u32, ClockGate::Register>,
 
     // UART Clock Gate for run, sleep, and deep sleep modes
-    pub uart_clk_gate_run: ReadWrite<u32, ClockGate::Register>,
-    pub uart_clk_gate_sleep: ReadWrite<u32, ClockGate::Register>,
-    pub uart_clk_gate_deep_sleep: ReadWrite<u32, ClockGate::Register>,
+    pub uart_clk_gate_run: ReadWrite<u32, ClockGate2::Register>,
+    pub uart_clk_gate_sleep: ReadWrite<u32, ClockGate2::Register>,
+    pub uart_clk_gate_deep_sleep: ReadWrite<u32, ClockGate2::Register>,
 
     _reserved4: [ReadOnly<u8>; 0xB4],
 
@@ -113,12 +113,12 @@ register_bitfields![
     u32,
     VDControl [
         // SPARE1 (bits 1-31)
-        ULDO              OFFSET(0) NUMBITS(1) []
+        ULDO            OFFSET(0) NUMBITS(1) []
     ],
     ClockLoad [
         // RESERVED (bits 2-31)
-        LOAD_DONE   OFFSET(1) NUMBITS(1) [],
-        LOAD        OFFSET(0) NUMBITS(1) []
+        LOAD_DONE       OFFSET(1) NUMBITS(1) [],
+        LOAD            OFFSET(0) NUMBITS(1) []
     ],
     SECDMAClockGate [
         //RESERVED (bits 25-31)
@@ -132,35 +132,44 @@ register_bitfields![
     ],
     ClockGate [
         // RESERVED (bits 1-31)
-        CLK_EN      OFFSET(0) NUMBITS(1) []
+        CLK_EN          OFFSET(0) NUMBITS(1) []
+    ],
+    ClockGate2 [
+        // RESERVED (bits 1-31)
+        CLK_EN          OFFSET(0) NUMBITS(2) [
+            Set0 = 0b1,
+            Set1 = 0b10,
+            SetAll = 0b11,
+            ClearAll = 0b0
+        ]
     ],
     PowerDomain0 [
         // RESERVED (bits 3-31)
-        PERIPH_ON   OFFSET(2) NUMBITS(1) [],
-        SERIAL_ON   OFFSET(1) NUMBITS(1) [],
-        RFC_ON      OFFSET(0) NUMBITS(1) []
+        PERIPH_ON       OFFSET(2) NUMBITS(1) [],
+        SERIAL_ON       OFFSET(1) NUMBITS(1) [],
+        RFC_ON          OFFSET(0) NUMBITS(1) []
     ],
     PowerDomainSingle [
         // RESERVED (bits 1-31)
-        ON          OFFSET(0) NUMBITS(1) []
+        ON              OFFSET(0) NUMBITS(1) []
     ],
     PowerDomainStatus0 [
         // RESERVED (bits 1-31)
-        PERIPH_ON   OFFSET(2) NUMBITS(1) [],
-        SERIAL_ON   OFFSET(1) NUMBITS(1) [],
-        RFC_ON      OFFSET(0) NUMBITS(1) []
+        PERIPH_ON       OFFSET(2) NUMBITS(1) [],
+        SERIAL_ON       OFFSET(1) NUMBITS(1) [],
+        RFC_ON          OFFSET(0) NUMBITS(1) []
     ],
     PowerDomain1 [
         // RESERVED (bits 1-31)
-        VIMS_ON   OFFSET(2) NUMBITS(1) [],
-        RFC_ON   OFFSET(1) NUMBITS(1) [],
-        CPU_ON      OFFSET(0) NUMBITS(1) []
+        VIMS_ON         OFFSET(2) NUMBITS(1) [],
+        RFC_ON          OFFSET(1) NUMBITS(1) [],
+        CPU_ON          OFFSET(0) NUMBITS(1) []
     ],
     PowerDomainStatus1 [
         // RESERVED (bits 3-31)
-        VIMS_ON     OFFSET(2) NUMBITS(1) [],
-        RFC_ON      OFFSET(1) NUMBITS(1) [],
-        CPU_ON      OFFSET(0) NUMBITS(1) []
+        VIMS_ON         OFFSET(2) NUMBITS(1) [],
+        RFC_ON          OFFSET(1) NUMBITS(1) [],
+        CPU_ON          OFFSET(0) NUMBITS(1) []
     ]
 ];
 
@@ -324,19 +333,19 @@ impl Clock {
     /// Enables UART clocks for run, sleep and deep sleep mode.
     pub fn enable_uart() {
         let regs = PRCM_BASE;
-        regs.uart_clk_gate_run.modify(ClockGate::CLK_EN::SET);
-        regs.uart_clk_gate_sleep.modify(ClockGate::CLK_EN::SET);
-        regs.uart_clk_gate_deep_sleep.modify(ClockGate::CLK_EN::SET);
+        regs.uart_clk_gate_run.modify(ClockGate2::CLK_EN::SetAll);
+        regs.uart_clk_gate_sleep.modify(ClockGate2::CLK_EN::SetAll);
+        regs.uart_clk_gate_deep_sleep.modify(ClockGate2::CLK_EN::SetAll);
 
         prcm_commit();
     }
 
     pub fn disable_uart() {
         let regs = PRCM_BASE;
-        regs.uart_clk_gate_run.modify(ClockGate::CLK_EN::CLEAR);
-        regs.uart_clk_gate_sleep.modify(ClockGate::CLK_EN::CLEAR);
+        regs.uart_clk_gate_run.modify(ClockGate2::CLK_EN::ClearAll);
+        regs.uart_clk_gate_sleep.modify(ClockGate2::CLK_EN::ClearAll);
         regs.uart_clk_gate_deep_sleep
-            .modify(ClockGate::CLK_EN::CLEAR);
+            .modify(ClockGate2::CLK_EN::ClearAll);
 
         prcm_commit();
     }

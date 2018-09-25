@@ -11,6 +11,7 @@ extern crate cc26x2;
 #[macro_use(create_capability, debug, debug_gpio, static_init)]
 extern crate kernel;
 
+use capsules::nextnode_uart;
 use capsules::virtual_uart::{UartDevice, UartMux};
 use cc26x2::aon;
 use cc26x2::prcm;
@@ -49,6 +50,7 @@ pub struct Platform {
         capsules::virtual_alarm::VirtualMuxAlarm<'static, cc26x2::rtc::Rtc>,
     >,
     rng: &'static capsules::rng::SimpleRng<'static, cc26x2::trng::Trng>,
+    nextnode_uart: &'static nextnode_uart::NextnodeUart<'static, cc26x2::uart::UART>
 }
 
 impl kernel::Platform for Platform {
@@ -118,8 +120,8 @@ unsafe fn configure_pins() {
     cc26x2::gpio::PORT[0].enable_gpio();
     cc26x2::gpio::PORT[1].enable_gpio();
 
-    cc26x2::gpio::PORT[2].enable_uart_rx();
-    cc26x2::gpio::PORT[3].enable_uart_tx();
+    cc26x2::gpio::PORT[2].enable_uart0_rx();
+    cc26x2::gpio::PORT[3].enable_uart0_tx();
 
     cc26x2::gpio::PORT[4].enable_i2c_scl();
     cc26x2::gpio::PORT[5].enable_i2c_sda();
@@ -141,6 +143,8 @@ unsafe fn configure_pins() {
 
     // unused   cc26x2::gpio::PORT[16]
     // unused   cc26x2::gpio::PORT[17]
+    cc26x2::gpio::PORT[19].enable_uart1_rx();
+    cc26x2::gpio::PORT[20].enable_uart1_tx();
 
     // PWM      cc26x2::gpio::PORT[18]
     // PWM      cc26x2::gpio::PORT[19]
@@ -234,7 +238,6 @@ pub unsafe fn reset_handler() {
     }
 
     // UART
-
     // Create a shared UART channel for the console and for kernel debug.
     let uart_mux = static_init!(
         UartMux<'static>,
@@ -343,6 +346,18 @@ pub unsafe fn reset_handler() {
     );
     cc26x2::trng::TRNG.set_client(rng);
 
+    cc26x2::uart::UART1.enable_interrupts();
+    let nextnode_uart = static_init!(
+        nextnode_uart::NextnodeUart<'static, cc26x2::uart::UART>,
+        nextnode_uart::NextnodeUart::new(
+            &cc26x2::uart::UART1,
+            board_kernel.create_grant(&memory_allocation_capability)
+        )
+    );
+    kernel::hil::uart::UART::set_client(&cc26x2::uart::UART1, nextnode_uart);
+    kernel::hil::uart::UART::receive(&cc26x2::uart::UART1, &mut cc26x2::uart::UART1_RX_BUF, 4);
+
+
     let launchxl = Platform {
         console,
         gpio,
@@ -350,6 +365,7 @@ pub unsafe fn reset_handler() {
         button,
         alarm,
         rng,
+        nextnode_uart
     };
 
     let mut chip = cc26x2::chip::Cc26X2::new();
@@ -360,7 +376,7 @@ pub unsafe fn reset_handler() {
     }
 
     let ipc = &kernel::ipc::IPC::new(board_kernel, &memory_allocation_capability);
-
+    debug!("Loading processes");
     kernel::procs::load_processes(
         board_kernel,
         &cortexm4::syscall::SysCall::new(),

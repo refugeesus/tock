@@ -122,7 +122,7 @@ clean::
 	$(Q)$(CARGO) clean $(VERBOSE)
 
 .PHONY: release
-release: target/$(TARGET)/release/$(PLATFORM).bin
+release: target/$(TARGET)/release/$(PLATFORM).elf
 
 .PHONY: debug
 debug: target/$(TARGET)/debug/$(PLATFORM).bin
