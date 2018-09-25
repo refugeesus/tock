@@ -116,6 +116,27 @@ pub static mut UART1_ISR_RX_LEN: usize = 0;
 
 use cortexm4::simple_isr;
 
+macro_rules! uart_isr {
+    ($uart:ident, $buf:ident, $len:ident) => {
+        // get a copy of the masked interrupt status
+        let isr_status = $uart.registers.mis.extract();
+        if (isr_status.read(Interrupts::RX) != 0) ||  (isr_status.read(Interrupts::RX_TIMEOUT) != 0){
+                loop {
+                    let read_byte = $uart.registers.dr.get();
+                    let cur_byte = read_byte as u8;
+
+                    $buf[$len] = cur_byte;
+                    $len += 1;
+
+                    if $uart.registers.fr.read(Flags::RX_FIFO_EMPTY) != 0 {
+                        break;
+                    }
+                }
+        }
+        $uart.registers.icr.write(Interrupts::RX.val(1));
+    }
+
+}
 
 
 // handle RX interrupt
@@ -123,24 +144,9 @@ pub extern "C" fn uart1_isr() {
     unsafe { 
         simple_isr();
 
-        // get a copy of the masked interrupt status
-        let isr_status = UART1.registers.mis.extract();
-        if (isr_status.read(Interrupts::RX) != 0) ||  (isr_status.read(Interrupts::RX_TIMEOUT) != 0){
-                loop {
-                    let read_byte = UART1.registers.dr.get();
-                    let cur_byte = read_byte as u8;
-               
-                        UART1_ISR_RX_BUF[UART1_ISR_RX_LEN] = cur_byte;
-                        UART1_ISR_RX_LEN += 1;
-                   
-                    if UART1.registers.fr.read(Flags::RX_FIFO_EMPTY) != 0 {
-                        break;
-                    }
-                }
-        }
+        uart_isr!(UART1, UART1_ISR_RX_BUF, UART1_ISR_RX_LEN);
 
         UART1.nvic.clear_pending();
-        UART1.registers.icr.write(Interrupts::RX.val(1));
         UART1.nvic_event.set(true) 
    };
 }
@@ -282,27 +288,12 @@ impl UART {
         // handle RX interrupt
         if (isr_status.read(Interrupts::RX) != 0) ||  (isr_status.read(Interrupts::RX_TIMEOUT) != 0){
 
+
                 let mut rx_buf = self.rx_buf.take();
                 let mut rx_len = 0;
-                loop {
-                    let read_byte = self.registers.dr.get();
-                    // top 4 bits are status
-                    if ((read_byte >> 8) & 0xF) != 0 {
-                        //panic!("We have a UART Overrun, Break, Parity, or Framing Error")
-                    }
-                    let cur_byte = read_byte as u8;
-
-                    if let Some(ref mut buf) = rx_buf {
-                        buf[rx_len] = cur_byte;
-                        rx_len += 1;
-                    }
-                    
-                    if self.registers.fr.read(Flags::RX_FIFO_EMPTY) != 0 {
-                        break;
-                    }
-                }
 
                 if let Some(mut buf) = rx_buf {
+                    uart_isr!(self, buf, rx_len);
                     self.client.map(move |client| {
                         client.receive_complete(
                             buf,
@@ -310,6 +301,11 @@ impl UART {
                             kernel::hil::uart::Error::CommandComplete
                         );
                     });
+                }
+                else{
+                    let mut null_buf = [4; 0];
+                    uart_isr!(self, null_buf, rx_len);
+
                 }
         }
         // else assumed to be write
