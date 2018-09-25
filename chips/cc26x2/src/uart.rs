@@ -119,28 +119,30 @@ use cortexm4::simple_isr;
 
 
 // handle RX interrupt
-pub extern "C" fn UART1_ISR() {
-        unsafe { simple_isr() };
+pub extern "C" fn uart1_isr() {
+    unsafe { 
+        simple_isr();
 
         // get a copy of the masked interrupt status
-        let isr_status = UART1_BASE.mis.extract();
+        let isr_status = UART1.registers.mis.extract();
         if (isr_status.read(Interrupts::RX) != 0) ||  (isr_status.read(Interrupts::RX_TIMEOUT) != 0){
                 loop {
-                    let read_byte = UART1_BASE.dr.get();
+                    let read_byte = UART1.registers.dr.get();
                     let cur_byte = read_byte as u8;
-                    unsafe {
+               
                         UART1_ISR_RX_BUF[UART1_ISR_RX_LEN] = cur_byte;
                         UART1_ISR_RX_LEN += 1;
-                    }
-                    if UART1_BASE.fr.read(Flags::RX_FIFO_EMPTY) != 0 {
+                   
+                    if UART1.registers.fr.read(Flags::RX_FIFO_EMPTY) != 0 {
                         break;
                     }
                 }
         }
-        
-        UART1_NVIC.clear_pending();
-        UART1_BASE.icr.write(Interrupts::RX.val(1));
-        unsafe { UART1.nvic_event.set(true) };
+
+        UART1.nvic.clear_pending();
+        UART1.registers.icr.write(Interrupts::RX.val(1));
+        UART1.nvic_event.set(true) 
+   };
 }
 
 /// Stores an ongoing TX transaction
@@ -165,7 +167,6 @@ pub struct UART {
     pub nvic_event: VolatileCell<bool>
 }
 
-use crt1;
 impl UART {
     const fn new(base_reg: &'static StaticRef<UartRegisters>, nvic: &'static nvic::Nvic) -> UART {
         UART {

@@ -82,7 +82,7 @@ pub static mut BASE_VECTORS: [unsafe extern "C" fn(); 54] = [
     generic_isr,            // TRNG event (hw_ints.h 49)
     generic_isr,
     generic_isr,
-    uart::UART1_ISR, // 52 allegedly UART1 (http://e2e.ti.com/support/wireless_connectivity/proprietary_sub_1_ghz_simpliciti/f/156/t/662981?CC1312R-UART1-can-t-work-correctly-in-sensor-oad-cc1312lp-example-on-both-cc1312-launchpad-and-cc1352-launchpad)
+    uart::uart1_isr, // 52 allegedly UART1 (http://e2e.ti.com/support/wireless_connectivity/proprietary_sub_1_ghz_simpliciti/f/156/t/662981?CC1312R-UART1-can-t-work-correctly-in-sensor-oad-cc1312lp-example-on-both-cc1312-launchpad-and-cc1352-launchpad)
     generic_isr,
 ];
 

@@ -9,7 +9,6 @@ use uart;
 pub struct Cc26X2 {
     mpu: cortexm4::mpu::MPU,
     systick: cortexm4::systick::SysTick,
-    nvic_event: u64,
 }
 
 impl Cc26X2 {
@@ -18,7 +17,6 @@ impl Cc26X2 {
             mpu: cortexm4::mpu::MPU::new(),
             // The systick clocks with 48MHz by default
             systick: cortexm4::systick::SysTick::new_with_calibration(48 * 1000000),
-            nvic_event:0 
         }
     }
 }
