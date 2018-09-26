@@ -54,12 +54,17 @@ dependencies = [
  "cc26x2 0.1.0",
  "cortexm4 0.1.0",
  "kernel 0.1.0",
+ "smallbox 0.5.0",
 ]
 
 [[package]]
 name = "num-traits"
 version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
+name = "smallbox"
+version = "0.5.0"
 
 [[package]]
 name = "tock-cells"

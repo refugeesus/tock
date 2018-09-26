@@ -192,7 +192,16 @@ macro_rules! uart_isr {
 // event_handler!(uart0_handler, UART0);
 // event_handler!(uart1_hanlder, UART1);
 
+use events::KernelEvent;
 
+impl <'a>KernelEvent<'a> for UART<'a> {
+    fn is_set(&self)-> bool {
+        self.nvic_event.get()
+    }
+    fn dispatch(&self){
+        self.handle_interrupt();
+    }
+}
 
 
 use cortexm4::switch_to_kernel_space;
@@ -220,17 +229,17 @@ struct Transaction {
 
 use kernel::common::cells::VolatileCell;
 
-pub struct UART {
-    registers: &'static StaticRef<UartRegisters>,
-    client: OptionalCell<&'static uart::Client>,
+pub struct UART<'a> {
+    registers: &'a StaticRef<UartRegisters>,
+    client: OptionalCell<&'a uart::Client>,
     transaction: MapCell<Transaction>,
-    rx_buf: MapCell<&'static mut [u8]>,
-    pub nvic: &'static nvic::Nvic,
+    rx_buf: MapCell<&'a mut [u8]>,
+    pub nvic: &'a nvic::Nvic,
     pub nvic_event: VolatileCell<bool>
 }
 
-impl UART {
-    const fn new(base_reg: &'static StaticRef<UartRegisters>, nvic: &'static nvic::Nvic) -> UART {
+impl<'a> UART<'a>{
+    const fn new(base_reg: &'a StaticRef<UartRegisters>, nvic: &'a nvic::Nvic) -> UART<'a> {
         UART {
             registers: base_reg,
             client: OptionalCell::empty(),
@@ -319,7 +328,7 @@ impl UART {
     }
 
     // clears all interrupts related to UART.
-    pub fn handle_interrupt(&self, state: usize) {
+    pub fn handle_interrupt(&self) {
         // get a copy of the masked interrupt status
         let isr_status = self.registers.mis.extract();
 
@@ -403,7 +412,7 @@ impl UART {
     }
 }
 
-impl kernel::hil::uart::UART for UART {
+impl <'a>kernel::hil::uart::UART for UART<'a> {
     fn set_client(&self, client: &'static kernel::hil::uart::Client) {
         self.client.set(client);
     }

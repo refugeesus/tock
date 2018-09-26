@@ -4,7 +4,7 @@
 
 extern crate capsules;
 extern crate cortexm4;
-
+extern crate smallbox;
 extern crate cc26x2;
 
 #[allow(unused_imports)]
@@ -60,6 +60,11 @@ pub struct Platform {
     rng: &'static capsules::rng::SimpleRng<'static, cc26x2::trng::Trng>,
     nextnode_uart: &'static nextnode_uart::NextnodeUart<'static, cc26x2::uart::UART>
 }
+
+static mut KERNEL_EVENTS: [StackBox<space::S2, KernelEvent>; 2] = [
+    StackBox::new(cc26x2::uart::UART1),
+    StackBox::new(cc26x2::gpio::PORT)
+];
 
 impl kernel::Platform for Platform {
     fn with_driver<F, R>(&self, driver_num: usize, f: F) -> R
@@ -171,29 +176,46 @@ unsafe fn configure_pins() {
     // analog   cc26x2::gpio::PORT[30]
 }
 
-enum KernelEventTypes<'a>{
-    UART(KernelEvent<'a, cc26x2::uart::UART>),//
-    GPIO(KernelEvent<'a, cc26x2::gpio::Port>)
-}
+// pub struct KernelEvent<'a, T:'a> {
+//     state: VolatileCell<usize>,
+//     me: &'a T,
+//     handler: fn(&'a T, usize)
+// }
 
-impl <'a>From<KernelEvent<'a, cc26x2::uart::UART>> for KernelEventTypes<'a> {
-    fn from(periph: KernelEvent<'a, cc26x2::uart::UART>) -> KernelEventTypes<'a> {
-        KernelEventTypes::UART(periph)
-    }
-}
+// impl <'a, T>KernelEvent<'a, T>{
+//     pub fn new( me: &'a T, f: fn(&'a T, usize) ) -> KernelEvent<'a, T> {
+//         KernelEvent {
+//             state: VolatileCell::new(0),
+//             me,
+//             handler:f
+//             // option NVIC
+//         }
+//     }
 
-impl <'a>From<KernelEvent<'a, cc26x2::gpio::Port>> for KernelEventTypes<'a> {
-    fn from(periph: KernelEvent<'a, cc26x2::gpio::Port>) -> KernelEventTypes<'a> {
-        KernelEventTypes::GPIO(periph)
-    }
-}
+//     fn is_set(&self)-> bool {
+//         self.state.get()!=0
+//     }
 
+//     fn dispatch(&self) {
+//         (self.handler)(self.me, self.state.get());
+//     }
+
+//     fn clear(&mut self) {
+//         //check for NVIC
+//         self.state.set(0);
+//     }
+// }
 
 // et uart1_kernelEvent =  
 //         KernelEvent::new(&cc26x2::uart::UART1, cc26x2::uart::UART::handle_interrupt);
 
 //     let gpio_kernelEvent =  
 //         KernelEvent::new(&cc26x2::gpio::PORT,
+
+use smallbox::StackBox;
+use smallbox::space;
+
+
 
 #[no_mangle]
 pub unsafe fn reset_handler() {
@@ -409,16 +431,17 @@ pub unsafe fn reset_handler() {
         static _sapps: u8;
     }
 
-    let uart1_kernelEvent =  
-        KernelEvent::new(&cc26x2::uart::UART1, cc26x2::uart::UART::handle_interrupt);
+    // let uart1_kernelEvent =  
+    //     KernelEvent::new(&cc26x2::uart::UART1, cc26x2::uart::UART::handle_interrupt);
 
-    let gpio_kernelEvent =  
-        KernelEvent::new(&cc26x2::gpio::PORT, cc26x2::gpio::Port::handle_interrupt);
+    // let gpio_kernelEvent =  
+    //     KernelEvent::new(&cc26x2::gpio::PORT, cc26x2::gpio::Port::handle_interrupt);
 
-    let events: [KernelEventTypes; 2] = [
-        KernelEventTypes::from(uart1_kernelEvent),
-        KernelEventTypes::from(gpio_kernelEvent)
-    ];
+
+    // = [
+    //     StackBox::new(cc26x2::uart::UART1).expect("boo"),
+    //     StackBox::new(cc26x2::gpio::PORT).expect("boo")
+    // ];
 
 
     let ipc = &kernel::ipc::IPC::new(board_kernel, &memory_allocation_capability);

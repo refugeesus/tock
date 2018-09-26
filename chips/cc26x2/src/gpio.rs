@@ -102,6 +102,17 @@ register_bitfields![
         ]
     ]
 ];
+use events::KernelEvent;
+
+
+impl <'a>KernelEvent<'a> for Port {
+    fn is_set(&'a self)-> bool {
+        false 
+    }
+    fn dispatch(&'a self){
+        self.handle_interrupt();
+    }
+}
 
 /// Pinmux implementation (IOC)
 impl GPIOPin {
@@ -289,7 +300,7 @@ impl IndexMut<usize> for Port {
 }
 
 impl Port {
-    pub fn handle_interrupt(&self, _state: usize) {
+    pub fn handle_interrupt(&self) {
         let regs = GPIO_BASE;
         let evflags = regs.evflags.get();
         // Clear all interrupts by setting their bits to 1 in evflags
