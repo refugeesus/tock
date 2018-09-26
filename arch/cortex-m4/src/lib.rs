@@ -123,7 +123,7 @@ pub unsafe extern "C" fn generic_isr() {
 #[cfg(target_os = "none")]
 #[naked]
 /// don't disables the NVIC but switch to the kernel.
-pub unsafe extern "C" fn simple_isr() {
+pub unsafe extern "C" fn switch_to_kernel_space() {
     asm!(
         "
     /* Skip saving process state if not coming from user-space */

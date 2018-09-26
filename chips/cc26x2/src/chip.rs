@@ -2,14 +2,20 @@ use cortexm4::{self, nvic};
 use gpio;
 use i2c;
 use kernel;
-use peripheral_interrupts;
+use events;
 use rtc;
 use uart;
+use kernel::common::ring_buffer;
+
+use num_traits::FromPrimitive;
+
+
 
 pub struct Cc26X2 {
     mpu: cortexm4::mpu::MPU,
     systick: cortexm4::systick::SysTick,
 }
+
 
 impl Cc26X2 {
     pub unsafe fn new() -> Cc26X2 {
@@ -35,20 +41,29 @@ impl kernel::Chip for Cc26X2 {
     fn service_pending_interrupts(&mut self) {
         unsafe {
             while let Some(interrupt) = nvic::next_pending() {
-                match interrupt {
-                    peripheral_interrupts::GPIO => gpio::PORT.handle_interrupt(),
-                    peripheral_interrupts::AON_RTC => rtc::RTC.handle_interrupt(),
-                    peripheral_interrupts::UART0 => uart::UART0.handle_interrupt(),
-                    peripheral_interrupts::UART1 => uart::UART1.handle_interrupt(),
-                    peripheral_interrupts::I2C => i2c::I2C0.handle_interrupt(),
+
+                let parse_nvic = events::NVIC::from_u32(interrupt);
+
+                if let Some(event) = parse_nvic {
+                    match event {
+                    events::NVIC::GPIO => gpio::PORT.handle_interrupt(),
+                    events::NVIC::AON_RTC => rtc::RTC.handle_interrupt(),
+                    events::NVIC::UART0 => uart::UART0.handle_interrupt(),
+                    events::NVIC::UART1 => uart::UART1.handle_interrupt(),
+                    events::NVIC::I2C => i2c::I2C0.handle_interrupt(),
                     // AON Programmable interrupt
                     // We need to ignore JTAG events since some debuggers emit these
-                    peripheral_interrupts::AON_PROG => (),
+                    events::NVIC::AON_PROG => (),
                     _ => panic!("unhandled interrupt {}", interrupt),
+                    }
+                    let n = nvic::Nvic::new(interrupt);
+                    n.clear_pending();
+                    n.enable();
                 }
-                let n = nvic::Nvic::new(interrupt);
-                n.clear_pending();
-                n.enable();
+                else{
+                    panic!("Undefined NVIC")
+                }
+                
             }
         }
 

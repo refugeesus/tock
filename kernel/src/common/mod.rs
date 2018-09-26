@@ -16,7 +16,7 @@ pub mod peripherals;
 pub mod utils;
 
 mod queue;
-mod ring_buffer;
+pub mod ring_buffer;
 mod static_ref;
 
 pub use self::list::{List, ListLink, ListNode};

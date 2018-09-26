@@ -17,6 +17,7 @@ use cc26x2::aon;
 use cc26x2::prcm;
 use kernel::capabilities;
 use kernel::hil;
+use kernel::common::ring_buffer;
 
 #[macro_use]
 pub mod io;
@@ -30,6 +31,12 @@ const FAULT_RESPONSE: kernel::procs::FaultResponse = kernel::procs::FaultRespons
 // Number of concurrent processes this platform supports.
 const NUM_PROCS: usize = 2;
 static mut PROCESSES: [Option<&'static kernel::procs::ProcessType>; NUM_PROCS] = [None, None];
+
+// Types of Events
+#[derive(Copy, Clone)]
+pub enum KernelEvents{
+    None
+}
 
 #[link_section = ".app_memory"]
 // Give half of RAM to be dedicated APP memory
@@ -165,7 +172,9 @@ unsafe fn configure_pins() {
 
 #[no_mangle]
 pub unsafe fn reset_handler() {
+
     cc26x2::init();
+
 
     // Create capabilities that the board needs to call certain protected kernel
     // functions.

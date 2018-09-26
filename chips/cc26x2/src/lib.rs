@@ -6,16 +6,19 @@ extern crate cortexm4;
 #[allow(unused_imports)]
 #[macro_use]
 extern crate kernel;
+#[macro_use] extern crate enum_primitive;
+extern crate num_traits;
 
 pub mod aon;
 pub mod chip;
 pub mod crt1;
 pub mod gpio;
 pub mod i2c;
-pub mod peripheral_interrupts;
+pub mod events;
 pub mod prcm;
 pub mod rtc;
 pub mod trng;
 pub mod uart;
+
 
 pub use crt1::init;

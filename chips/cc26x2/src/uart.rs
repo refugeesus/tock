@@ -101,9 +101,9 @@ const UART1_BASE: StaticRef<UartRegisters> =
     unsafe { StaticRef::new(0x4000B000 as *const UartRegisters) };
 
 use cortexm4::nvic;
-use peripheral_interrupts;
-pub static UART0_NVIC: nvic::Nvic = unsafe { nvic::Nvic::new(peripheral_interrupts::UART0) };
-pub static UART1_NVIC: nvic::Nvic = unsafe { nvic::Nvic::new(peripheral_interrupts::UART1) };
+use events;
+pub static UART0_NVIC: nvic::Nvic = unsafe { nvic::Nvic::new(events::NVIC::UART0 as u32) };
+pub static UART1_NVIC: nvic::Nvic = unsafe { nvic::Nvic::new(events::NVIC::UART1 as u32) };
 
 pub static mut UART0_RX_BUF: [u8; 4] = [0; 4];
 pub static mut UART1_RX_BUF: [u8; 4] = [0; 4];
@@ -114,7 +114,6 @@ pub static mut UART1: UART = UART::new(&UART1_BASE, &UART1_NVIC);
 pub static mut UART1_ISR_RX_BUF: [u8; 4] = [0; 4];
 pub static mut UART1_ISR_RX_LEN: usize = 0;
 
-use cortexm4::simple_isr;
 
 macro_rules! uart_isr {
     ($uart:ident, $buf:ident, $len:ident) => {
@@ -138,11 +137,12 @@ macro_rules! uart_isr {
 
 }
 
+use cortexm4::switch_to_kernel_space;
 
 // handle RX interrupt
 pub extern "C" fn uart1_isr() {
     unsafe { 
-        simple_isr();
+        switch_to_kernel_space();
         uart_isr!(UART1, UART1_ISR_RX_BUF, UART1_ISR_RX_LEN);
         UART1.nvic.clear_pending();
         UART1.nvic_event.set(true) 
@@ -267,8 +267,6 @@ impl UART {
 
         // handle RX interrupt
         if (isr_status.read(Interrupts::RX) != 0) ||  (isr_status.read(Interrupts::RX_TIMEOUT) != 0){
-
-
                 let mut rx_buf = self.rx_buf.take();
                 let mut rx_len = 0;
 
@@ -285,7 +283,6 @@ impl UART {
                 else{
                     let mut null_buf = [4; 0];
                     uart_isr!(self, null_buf, rx_len);
-
                 }
         }
         // else assumed to be write
