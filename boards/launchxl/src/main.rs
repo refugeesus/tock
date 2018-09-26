@@ -15,9 +15,10 @@ use capsules::nextnode_uart;
 use capsules::virtual_uart::{UartDevice, UartMux};
 use cc26x2::aon;
 use cc26x2::prcm;
+use cc26x2::events::KernelEvent;
+
 use kernel::capabilities;
 use kernel::hil;
-use kernel::common::ring_buffer;
 
 #[macro_use]
 pub mod io;
@@ -383,6 +384,9 @@ pub unsafe fn reset_handler() {
         /// Beginning of the ROM region containing app images.
         static _sapps: u8;
     }
+
+    let uart1_kernelEvent =  
+        KernelEvent::new(&cc26x2::uart::UART1, cc26x2::uart::UART::handle_interrupt);
 
     let ipc = &kernel::ipc::IPC::new(board_kernel, &memory_allocation_capability);
     debug!("Loading processes");

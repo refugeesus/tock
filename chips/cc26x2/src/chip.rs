@@ -6,9 +6,7 @@ use events;
 use rtc;
 use uart;
 use kernel::common::ring_buffer;
-
 use num_traits::FromPrimitive;
-
 
 
 pub struct Cc26X2 {
@@ -42,18 +40,18 @@ impl kernel::Chip for Cc26X2 {
         unsafe {
             while let Some(interrupt) = nvic::next_pending() {
 
-                let parse_nvic = events::NVIC::from_u32(interrupt);
+                let parse_nvic = events::NVIC_IRQ::from_u32(interrupt);
 
                 if let Some(event) = parse_nvic {
                     match event {
-                    events::NVIC::GPIO => gpio::PORT.handle_interrupt(),
-                    events::NVIC::AON_RTC => rtc::RTC.handle_interrupt(),
-                    events::NVIC::UART0 => uart::UART0.handle_interrupt(),
-                    events::NVIC::UART1 => uart::UART1.handle_interrupt(),
-                    events::NVIC::I2C => i2c::I2C0.handle_interrupt(),
+                    events::NVIC_IRQ::GPIO => gpio::PORT.handle_interrupt(),
+                    events::NVIC_IRQ::AON_RTC => rtc::RTC.handle_interrupt(),
+                    events::NVIC_IRQ::UART0 => uart::UART0.handle_interrupt(1),
+                    events::NVIC_IRQ::UART1 => uart::UART1.handle_interrupt(1),
+                    events::NVIC_IRQ::I2C => i2c::I2C0.handle_interrupt(),
                     // AON Programmable interrupt
                     // We need to ignore JTAG events since some debuggers emit these
-                    events::NVIC::AON_PROG => (),
+                    events::NVIC_IRQ::AON_PROG => (),
                     _ => panic!("unhandled interrupt {}", interrupt),
                     }
                     let n = nvic::Nvic::new(interrupt);
@@ -61,7 +59,7 @@ impl kernel::Chip for Cc26X2 {
                     n.enable();
                 }
                 else{
-                    panic!("Undefined NVIC")
+                    panic!("Undefined NVIC_IRQ")
                 }
                 
             }

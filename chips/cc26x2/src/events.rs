@@ -1,9 +1,40 @@
+use kernel::common::cells::VolatileCell;
+
+pub struct KernelEvent<'a, T:'a> {
+    state: VolatileCell<usize>,
+    me: &'a T,
+    handler: fn(&'a T, usize)
+}
+
+impl <'a, T>KernelEvent<'a, T>{
+    pub fn new( me: &'a T, f: fn(&'a T, usize) ) -> KernelEvent<'a, T> {
+        KernelEvent {
+            state: VolatileCell::new(0),
+            me,
+            handler:f
+            // option NVIC
+        }
+    }
+
+    fn is_set(&self)-> bool {
+        self.state.get()!=0
+    }
+
+    fn dispatch(&self) {
+        (self.handler)(self.me, self.state.get());
+    }
+
+    fn clear(&mut self) {
+        //check for NVIC
+        self.state.set(0);
+    }
+}
 
 use num_traits::FromPrimitive;
 
 enum_from_primitive!{
 #[derive(Debug, PartialEq)]
-pub enum NVIC {
+pub enum NVIC_IRQ {
     GPIO = 0,
     I2C = 1,
     RF_CORE_PE1 = 2,
@@ -40,3 +71,4 @@ pub enum NVIC {
     UART1 = 36
 }
 }
+
