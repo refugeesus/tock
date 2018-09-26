@@ -171,6 +171,30 @@ unsafe fn configure_pins() {
     // analog   cc26x2::gpio::PORT[30]
 }
 
+enum KernelEventTypes<'a>{
+    UART(KernelEvent<'a, cc26x2::uart::UART>),//
+    GPIO(KernelEvent<'a, cc26x2::gpio::Port>)
+}
+
+impl <'a>From<KernelEvent<'a, cc26x2::uart::UART>> for KernelEventTypes<'a> {
+    fn from(periph: KernelEvent<'a, cc26x2::uart::UART>) -> KernelEventTypes<'a> {
+        KernelEventTypes::UART(periph)
+    }
+}
+
+impl <'a>From<KernelEvent<'a, cc26x2::gpio::Port>> for KernelEventTypes<'a> {
+    fn from(periph: KernelEvent<'a, cc26x2::gpio::Port>) -> KernelEventTypes<'a> {
+        KernelEventTypes::GPIO(periph)
+    }
+}
+
+
+// et uart1_kernelEvent =  
+//         KernelEvent::new(&cc26x2::uart::UART1, cc26x2::uart::UART::handle_interrupt);
+
+//     let gpio_kernelEvent =  
+//         KernelEvent::new(&cc26x2::gpio::PORT,
+
 #[no_mangle]
 pub unsafe fn reset_handler() {
 
@@ -387,6 +411,15 @@ pub unsafe fn reset_handler() {
 
     let uart1_kernelEvent =  
         KernelEvent::new(&cc26x2::uart::UART1, cc26x2::uart::UART::handle_interrupt);
+
+    let gpio_kernelEvent =  
+        KernelEvent::new(&cc26x2::gpio::PORT, cc26x2::gpio::Port::handle_interrupt);
+
+    let events: [KernelEventTypes; 2] = [
+        KernelEventTypes::from(uart1_kernelEvent),
+        KernelEventTypes::from(gpio_kernelEvent)
+    ];
+
 
     let ipc = &kernel::ipc::IPC::new(board_kernel, &memory_allocation_capability);
     debug!("Loading processes");

@@ -44,7 +44,7 @@ impl kernel::Chip for Cc26X2 {
 
                 if let Some(event) = parse_nvic {
                     match event {
-                    events::NVIC_IRQ::GPIO => gpio::PORT.handle_interrupt(),
+                    events::NVIC_IRQ::GPIO => gpio::PORT.handle_interrupt(1),
                     events::NVIC_IRQ::AON_RTC => rtc::RTC.handle_interrupt(),
                     events::NVIC_IRQ::UART0 => uart::UART0.handle_interrupt(1),
                     events::NVIC_IRQ::UART1 => uart::UART1.handle_interrupt(1),
