@@ -4,8 +4,8 @@ use cortexm4::{
     svc_handler, 
     systick_handler, 
     hard_fault_handler, 
-    generic_handle_finish
-    };
+    clear_and_disable_nvic
+};
 
 
 extern "C" {
@@ -26,27 +26,29 @@ unsafe extern "C" fn unhandled_interrupt() {
     'loop0: loop {}
 }
 
-// unsafe extern "C" fn hard_fault_handler() {
-//     'loop0: loop {}
-// }
 use uart::{uart0_isr, uart1_isr};
-
-
-use events::EVENT_PRIORITY;
-use events::set_event_flag;
+//use events::set_event_flag;
 
 macro_rules! specific_isr {
-    ($label:tt, $isr:ident, $priority:expr) => {
+    ($label:tt, $isr:ident) => {
         #[cfg(target_os = "none")]
         unsafe extern "C" fn $label() {
             switch_to_kernel_space!($label);
             $isr();
+            events::set_event_flag(events::EVENT_PRIORITY::UART1);
+            clear_and_disable_nvic();
         }
     };
 }
+use events;
+//specific_isr!(uart0_nvic, uart0_isr, EVENT_PRIORITY::UART0);
+specific_isr!(uart1_nvic, uart1_isr);
 
-specific_isr!(uart0_nvic, uart0_isr, EVENT_PRIORITY::UART0);
-specific_isr!(uart1_nvic, uart1_isr, EVENT_PRIORITY::UART1);
+unsafe extern "C" fn uart0_nvic() {
+    switch_to_kernel_space!(uart0);
+    events::set_event_flag(events::EVENT_PRIORITY::UART0);
+    clear_and_disable_nvic();
+}
 
 
 #[link_section = ".vectors"]

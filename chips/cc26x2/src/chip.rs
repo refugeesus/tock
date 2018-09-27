@@ -5,7 +5,6 @@ use kernel;
 use events;
 use rtc;
 use uart;
-use kernel::common::ring_buffer;
 use num_traits::FromPrimitive;
 
 
@@ -43,26 +42,26 @@ impl kernel::Chip for Cc26X2 {
     fn service_pending_interrupts(&mut self) {
     unsafe {
 
-        while let Some(interrupt) = nvic::next_pending() {
-            let parse_nvic = events::NVIC_IRQ::from_u32(interrupt);
+        // while let Some(interrupt) = nvic::next_pending() {
+        //     let parse_nvic = events::NVIC_IRQ::from_u32(interrupt);
 
-            if let Some(event) = parse_nvic {
-                match event {
-                    NVIC_IRQ::GPIO => gpio::PORT.handle_interrupt(),
-                    NVIC_IRQ::AON_RTC => rtc::RTC.handle_interrupt(),
-                    //NVIC_IRQ::UART0 => uart::UART0.handle_interrupt(),
-                    //NVIC_IRQ::UART1 => uart::UART1.handle_interrupt(),
-                    NVIC_IRQ::I2C => i2c::I2C0.handle_interrupt(),
-                    // AON Programmable interrupt
-                    // We need to ignore JTAG events since some debuggers emit these
-                    NVIC_IRQ::AON_PROG => (),
-                    _ => panic!("unhandled interrupt {}", interrupt),
-                }
-            }
-            let n = nvic::Nvic::new(interrupt);
-            n.clear_pending();
-            n.enable();
-        }
+        //     if let Some(event) = parse_nvic {
+        //         match event {
+        //             NVIC_IRQ::GPIO => gpio::PORT.handle_interrupt(),
+        //             NVIC_IRQ::AON_RTC => rtc::RTC.handle_interrupt(),
+        //             NVIC_IRQ::UART0 => uart::UART0.handle_interrupt(),
+        //             //NVIC_IRQ::UART1 => uart::UART1.handle_interrupt(),
+        //             NVIC_IRQ::I2C => i2c::I2C0.handle_interrupt(),
+        //             // AON Programmable interrupt
+        //             // We need to ignore JTAG events since some debuggers emit these
+        //             NVIC_IRQ::AON_PROG => (),
+        //             _ => panic!("unhandled interrupt {}", interrupt),
+        //         }
+        //     }
+        //     let n = nvic::Nvic::new(interrupt);
+        //     n.clear_pending();
+        //     n.enable();
+        // }
 
 
         while let Some(event) = events::next_pending() {

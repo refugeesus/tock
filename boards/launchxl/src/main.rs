@@ -265,7 +265,7 @@ pub unsafe fn reset_handler() {
     let console_uart = static_init!(UartDevice, UartDevice::new(uart_mux, true));
     console_uart.setup();
 
-    cc26x2::uart::UART0.initialize();
+    cc26x2::uart::UART0.initialize(&mut cc26x2::uart::UART0_ISR_RX_BUF);
 
     let console = static_init!(
         capsules::console::Console<UartDevice>,
@@ -366,6 +366,8 @@ pub unsafe fn reset_handler() {
             board_kernel.create_grant(&memory_allocation_capability)
         )
     );
+    cc26x2::uart::UART1.initialize(&mut cc26x2::uart::UART1_ISR_RX_BUF);
+
     kernel::hil::uart::UART::set_client(&cc26x2::uart::UART1, nextnode_uart);
     kernel::hil::uart::UART::receive(&cc26x2::uart::UART1, &mut cc26x2::uart::UART1_RX_BUF, 4);
 

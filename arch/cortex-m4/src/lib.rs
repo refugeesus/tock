@@ -90,8 +90,7 @@ macro_rules! switch_to_kernel_space{
 
 #[macro_export]
 #[cfg(target_os = "none")]
-#[naked]
-pub unsafe extern "C" fn generic_handle_finish() {
+pub unsafe extern "C" fn clear_and_disable_nvic() {
       asm!(
         "
         /* Find the ISR number by looking at the low byte of the IPSR registers */

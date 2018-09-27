@@ -91,3 +91,6 @@ fmt format formatall:
 list list-boards list-platforms:
 	@./tools/list_boards.sh
 
+board:
+	ifeq $(target) ""
+		@echo "Do 'make board target=launchxl' target=(boardname)"

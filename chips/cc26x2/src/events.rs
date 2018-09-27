@@ -1,15 +1,14 @@
 
 pub static mut EVENTS: u64 = 0;
 
-use cortexm4::nvic;
 use cortexm::support::{atomic_read, atomic_write};
 
 enum_from_primitive!{
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum EVENT_PRIORITY {
     GPIO = 0,
-    UART0 = 1,
-    UART1 = 2,
+    UART0 = 2,
+    UART1 = 1,
     AON_RTC = 3,
     RTC = 4,
     I2C0 = 6,
@@ -17,11 +16,10 @@ pub enum EVENT_PRIORITY {
 }
 }
 
-pub unsafe fn next_pending() -> Option<EVENT_PRIORITY> {
+pub fn next_pending() -> Option<EVENT_PRIORITY> {
     let mut event_flags;
-    unsafe {  
-        event_flags = atomic_read(&EVENTS);
-    }
+    unsafe { event_flags = atomic_read(&EVENTS) }
+    
 
     let mut count = 0;
     // stay in loop until we found the flag
@@ -39,10 +37,9 @@ pub unsafe fn next_pending() -> Option<EVENT_PRIORITY> {
 }
 
 pub fn set_event_flag(priority: EVENT_PRIORITY) {
-    //assert!(priority < 64);
     unsafe { 
         let mut val = atomic_read(&EVENTS);
-        val |= (0b1 << (priority as u8) as u64);
+        val |= 0b1 << (priority as u8) as u64;
         atomic_write(&mut EVENTS, val);
     };
 }
@@ -50,7 +47,7 @@ pub fn set_event_flag(priority: EVENT_PRIORITY) {
 pub fn clear_event_flag(priority: EVENT_PRIORITY) {
     unsafe { 
         let mut val = atomic_read(&EVENTS);
-        val &= !(0b1 << (priority as u8) as u64);
+        val &= !0b1 << (priority as u8) as u64;
         atomic_write(&mut EVENTS, val);
  };
 }

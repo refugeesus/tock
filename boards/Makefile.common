@@ -125,7 +125,7 @@ clean::
 release: target/$(TARGET)/release/$(PLATFORM).elf
 
 .PHONY: debug
-debug: target/$(TARGET)/debug/$(PLATFORM).bin
+debug: target/$(TARGET)/debug/$(PLATFORM).elf
 
 .PHONY: debug-lst
 debug-lst: target/$(TARGET)/debug/$(PLATFORM).lst
@@ -163,10 +163,10 @@ target:
 
 .PHONY: target/$(TARGET)/release/$(PLATFORM)
 target/$(TARGET)/release/$(PLATFORM):
-	$(Q)RUSTFLAGS="$(RUSTFLAGS_FOR_CARGO_LINKING)" $(CARGO) build --target=$(TARGET) $(VERBOSE) --release
+	$(Q)RUSTFLAGS="$(RUSTFLAGS_FOR_CARGO_LINKING)" $(CARGO) build --target=$(TARGET) $(VERBOSE) --release --color always
 	$(Q)$(SIZE) $@
 
 .PHONY: target/$(TARGET)/debug/$(PLATFORM)
 target/$(TARGET)/debug/$(PLATFORM):
-	$(Q)RUSTFLAGS="$(RUSTFLAGS_FOR_CARGO_LINKING)" $(CARGO) build $(VERBOSE) --target=$(TARGET)
+	$(Q)RUSTFLAGS="$(RUSTFLAGS_FOR_CARGO_LINKING)" $(CARGO) build $(VERBOSE) --target=$(TARGET) --color always
 	$(Q)$(SIZE) $@
