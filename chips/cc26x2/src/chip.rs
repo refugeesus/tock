@@ -50,7 +50,7 @@ impl kernel::Chip for Cc26X2 {
                 match event {
                     NVIC_IRQ::GPIO => gpio::PORT.handle_interrupt(),
                     NVIC_IRQ::AON_RTC => rtc::RTC.handle_interrupt(),
-                    NVIC_IRQ::UART0 => uart::UART0.handle_interrupt(),
+                    //NVIC_IRQ::UART0 => uart::UART0.handle_interrupt(),
                     //NVIC_IRQ::UART1 => uart::UART1.handle_interrupt(),
                     NVIC_IRQ::I2C => i2c::I2C0.handle_interrupt(),
                     // AON Programmable interrupt
@@ -67,14 +67,13 @@ impl kernel::Chip for Cc26X2 {
 
         while let Some(event) = events::next_pending() {
             match event {
-                    EVENT_PRIORITY::UART1 => {
-                        uart::UART1.handle_event()
-                    },
+                    EVENT_PRIORITY::UART0 => uart::UART0.handle_event(),
+                    EVENT_PRIORITY::UART1 => uart::UART1.handle_event(),
                      _ => panic!("unhandled event {:?} ", event),
                     // EVENT_PRIORITY::GPIO  => gpio::PORT.handle_interrupt(),
                     // EVENT_PRIORITY::RTC   => rtc::RTC.handle_interrupt(),
                     // EVENT_PRIORITY::AON_RTC => rtc::RTC.handle_interrupt(),
-                    // EVENT_PRIORITY::UART0 => uart::UART0.handle_interrupt(),
+                    
 
                     // EVENT_PRIORITY::I2C0 => i2c::I2C0.handle_interrupt(),
                     // EVENT_PRIORITY::AON_PROG => (),

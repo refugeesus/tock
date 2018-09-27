@@ -4,7 +4,6 @@ use cortexm4::{
     svc_handler, 
     systick_handler, 
     hard_fault_handler, 
-    switch_to_kernel_space,
     generic_handle_finish
     };
 
@@ -30,24 +29,24 @@ unsafe extern "C" fn unhandled_interrupt() {
 // unsafe extern "C" fn hard_fault_handler() {
 //     'loop0: loop {}
 // }
-use uart;
+use uart::{uart0_isr, uart1_isr};
 
 
 use events::EVENT_PRIORITY;
 use events::set_event_flag;
 
 macro_rules! specific_isr {
-    ($label:tt, $priority:expr) => {
+    ($label:tt, $isr:ident, $priority:expr) => {
         #[cfg(target_os = "none")]
         unsafe extern "C" fn $label() {
-            switch_to_kernel_space();
-            set_event_flag($priority);
-            uart::uart1_isr();
+            switch_to_kernel_space!($label);
+            $isr();
         }
     };
 }
 
-specific_isr!(uart1_generic_isr, EVENT_PRIORITY::UART1);
+specific_isr!(uart0_nvic, uart0_isr, EVENT_PRIORITY::UART0);
+specific_isr!(uart1_nvic, uart1_isr, EVENT_PRIORITY::UART1);
 
 
 #[link_section = ".vectors"]
@@ -75,7 +74,7 @@ pub static mut BASE_VECTORS: [unsafe extern "C" fn(); 54] = [
     generic_isr,         // RF Core Command & Packet Engine 1
     generic_isr,         // AON SpiSplave Rx, Tx and CS
     generic_isr,         // AON RTC
-    generic_isr,   // 21 UART0 Rx and Tx
+    uart0_nvic,          // 21 UART0 Rx and Tx
     generic_isr,         // 22 AUX software event 0
     generic_isr,         // 23 SSI0 Rx and Tx
     generic_isr,         // SSI1 Rx and Tx
@@ -108,7 +107,7 @@ pub static mut BASE_VECTORS: [unsafe extern "C" fn(); 54] = [
     generic_isr,            // TRNG event (hw_ints.h 49)
     generic_isr,
     generic_isr,
-    uart1_generic_isr,//uart1_generic_isr,//uart::uart1_isr, // 52 allegedly UART1 (http://e2e.ti.com/support/wireless_connectivity/proprietary_sub_1_ghz_simpliciti/f/156/t/662981?CC1312R-UART1-can-t-work-correctly-in-sensor-oad-cc1312lp-example-on-both-cc1312-launchpad-and-cc1352-launchpad)
+    uart1_nvic,//uart1_generic_isr,//uart::uart1_isr, // 52 allegedly UART1 (http://e2e.ti.com/support/wireless_connectivity/proprietary_sub_1_ghz_simpliciti/f/156/t/662981?CC1312R-UART1-can-t-work-correctly-in-sensor-oad-cc1312lp-example-on-both-cc1312-launchpad-and-cc1352-launchpad)
     generic_isr,
 ];
 

@@ -66,14 +66,14 @@ register_bitfields![
             // you are allowed to write 0 to everyone
             Clear = 0x000000 
         ],
-        // CTSIMM OFFSET(1) NUMBITS(1) [], // clear to send interrupt mask
+        CTSIMM OFFSET(1) NUMBITS(1) [], // clear to send interrupt mask
         RX OFFSET(4) NUMBITS(1) [],   // receive interrupt mask
         TX OFFSET(5) NUMBITS(1) [],   // transmit interrupt mask
         RX_TIMEOUT OFFSET(6) NUMBITS(1) [],   // receive timeout interrupt mask
-        // FE OFFSET(7) NUMBITS(1) [],   // framing error interrupt mask
-        // PE OFFSET(8) NUMBITS(1) [],   // parity error interrupt mask
-        // BE OFFSET(9) NUMBITS(1) [],   // break error interrupt mask
-        // OE OFFSET(10) NUMBITS(1) [],  // overrun error interrupt mask
+        FE OFFSET(7) NUMBITS(1) [],   // framing error interrupt mask
+        PE OFFSET(8) NUMBITS(1) [],   // parity error interrupt mask
+        BE OFFSET(9) NUMBITS(1) [],   // break error interrupt mask
+        OE OFFSET(10) NUMBITS(1) [],  // overrun error interrupt mask
         END_OF_TRANSMISSION OFFSET(11) NUMBITS(1) [] // end of transmission interrupt mask
     ],
     FifoInterrupts [
@@ -112,41 +112,68 @@ pub static mut UART1_RX_BUF: [u8; 4] = [0; 4];
 
 pub static mut UART0: UART = UART::new(&UART0_BASE, &UART0_NVIC);
 pub static mut UART1: UART = UART::new(&UART1_BASE, &UART1_NVIC);
-pub static mut UART1_ISR_RX_BUF: [u8; 4] = [0; 4];
-pub static mut UART1_ISR_RX_LEN: usize = 0;
 
-macro_rules! uart_isr {
-    ($uart:ident, $buf:ident, $len:ident) => {
-        // get a copy of the masked interrupt status
-        let isr_status = $uart.registers.mis.extract();
-        if (isr_status.read(Interrupts::RX) != 0) ||  (isr_status.read(Interrupts::RX_TIMEOUT) != 0){
-                loop {
-                    let read_byte = $uart.registers.dr.get();
-                    let cur_byte = read_byte as u8;
+static mut UART1_ISR_RX_BUF: [u8; 4] = [0; 4];
+static mut UART1_ISR_RX_LEN: usize = 0;
 
-                    $buf[$len] = cur_byte;
-                    $len += 1;
+static mut UART0_ISR_RX_BUF: [u8; 4] = [0; 4];
+static mut UART0_ISR_RX_LEN: usize = 0;
 
-                    if $uart.registers.fr.read(Flags::RX_FIFO_EMPTY) != 0 {
-                        break;
-                    }
+static mut UART0_EVENT_FLAGS: ReadWrite<u32, Interrupts::Register> = ReadWrite::new(0);
+static mut UART1_EVENT_FLAGS: ReadWrite<u32, Interrupts::Register> = ReadWrite::new(0);
+
+
+macro_rules! uart_nvic {
+    ($fn_name:tt, $uart:ident, $buf:ident, $len:ident, $event_flags:ident) => {
+        // handle RX interrupt
+        pub extern "C" fn $fn_name() {
+            unsafe {
+
+                // get a copy of the masked interrupt status
+                let isr_status = $uart.registers.mis.extract();
+
+                // provide copy of flags of kernel-space handling
+                $event_flags.set(isr_status.get());
+                // signal to kernel-space that there is an event
+                events::set_event_flag(EVENT_PRIORITY::UART1);
+
+                // handle RX
+                if (isr_status.read(Interrupts::RX) != 0) ||  (isr_status.read(Interrupts::RX_TIMEOUT) != 0){
+                        loop {
+                            let read_byte = $uart.registers.dr.get();
+                            let cur_byte = read_byte as u8;
+
+                            $buf[$len] = cur_byte;
+                            $len += 1;
+
+                            if $uart.registers.fr.read(Flags::RX_FIFO_EMPTY) != 0 {
+                                break;
+                            }
+                        }
+                    // clear these interrupt flags
+                    $uart.registers.icr.write(Interrupts::RX.val(1));
+                    $uart.registers.icr.write(Interrupts::RX_TIMEOUT.val(1));
                 }
+
+                // get a copy of interrupt unhandled in NVIC
+                let isr_suppress = !$uart.registers.mis.get();
+                // get current interrupt mask
+                let imsc = $uart.registers.imsc.get();
+                // remove unhanled interrupt from interrupt mask
+                $uart.registers.imsc.set( imsc & !isr_suppress);
+
+                // Clear all interrupt flags
+                $uart.registers.icr.write(Interrupts::ALL_INTERRUPTS::Set);
+                // Clear NVIC
+                $uart.nvic.clear_pending();
+            }
         }
-        $uart.registers.icr.write(Interrupts::RX.val(1));
     }
 }
 
-use cortexm4::switch_to_kernel_space;
+uart_nvic!(uart0_isr, UART0, UART0_ISR_RX_BUF, UART0_ISR_RX_LEN, UART0_EVENT_FLAGS);
+uart_nvic!(uart1_isr, UART1, UART1_ISR_RX_BUF, UART1_ISR_RX_LEN, UART1_EVENT_FLAGS);
 
-// handle RX interrupt
-pub extern "C" fn uart1_isr() {
-    unsafe { 
-        uart_isr!(UART1, UART1_ISR_RX_BUF, UART1_ISR_RX_LEN);
-        UART1.nvic.clear_pending();
-        UART1.registers.icr.write(Interrupts::ALL_INTERRUPTS::Set);
-        events::set_event_flag(EVENT_PRIORITY::UART1)
-   };
-}
 
 /// Stores an ongoing TX transaction
 struct Transaction {
@@ -259,33 +286,94 @@ impl UART {
         self.registers.imsc.modify(Interrupts::ALL_INTERRUPTS::Set);
     }
 
-    // clears all interrupts related to UART.
-    pub fn handle_interrupt(&self) {
+    // // clears all interrupts related to UART.
+    // pub fn handle_interrupt(&self) {
+    //     // get a copy of the masked interrupt status
+    //     let isr_status = self.registers.mis.extract();
+
+    //     // handle RX interrupt
+    //     if (isr_status.read(Interrupts::RX) != 0) ||  (isr_status.read(Interrupts::RX_TIMEOUT) != 0){
+    //             let mut rx_buf = self.rx_buf.take();
+    //             let mut rx_len = 0;
+
+    //             if let Some(mut buf) = rx_buf {
+    //                 uart_isr!(self, buf, rx_len);
+    //                 self.client.map(move |client| {
+    //                     client.receive_complete(
+    //                         buf,
+    //                         rx_len,
+    //                         kernel::hil::uart::Error::CommandComplete
+    //                     );
+    //                 });
+    //             }
+    //             else{
+    //                 let mut null_buf = [0; 4];
+    //                 uart_isr!(self, null_buf, rx_len);
+    //             }
+    //     }
+    //     // else assumed to be write
+    //     else {
+    //         self.transaction.take().map(|mut transaction| {
+    //             transaction.index += 1;
+    //             if transaction.index < transaction.length {
+    //                 self.send_byte(transaction.buffer[transaction.index]);
+    //                 self.transaction.put(transaction);
+    //             } else {
+    //                 self.client.map(move |client| {
+    //                     client.transmit_complete(
+    //                         transaction.buffer,
+    //                         kernel::hil::uart::Error::CommandComplete,
+    //                     );
+    //                 });
+    //             }
+    //         });
+            
+    //     }
+
+    //     // Clear interrupts
+    //     self.registers.icr.write(Interrupts::ALL_INTERRUPTS::Set);
+    //     self.nvic.clear_pending();
+    //     self.nvic.enable();
+    // }
+
+    pub fn handle_event(&self) {
         // get a copy of the masked interrupt status
         let isr_status = self.registers.mis.extract();
-
         // handle RX interrupt
         if (isr_status.read(Interrupts::RX) != 0) ||  (isr_status.read(Interrupts::RX_TIMEOUT) != 0){
-                let mut rx_buf = self.rx_buf.take();
-                let mut rx_len = 0;
+            if let Some(mut buf) = self.rx_buf.take() {
+                let len;
+                self.nvic.disable();
+                unsafe { 
+                    len = UART1_ISR_RX_LEN;
+                    for i in 0..len {
+                        buf[i] = UART1_ISR_RX_BUF[i];
+                    }
+                    UART1_ISR_RX_LEN = 0;
+                }
+                self.nvic.enable();
 
-                if let Some(mut buf) = rx_buf {
-                    uart_isr!(self, buf, rx_len);
-                    self.client.map(move |client| {
-                        client.receive_complete(
-                            buf,
-                            rx_len,
-                            kernel::hil::uart::Error::CommandComplete
-                        );
-                    });
+                self.client.map(move |client| {
+                    client.receive_complete(
+                        buf,
+                        len,
+                        kernel::hil::uart::Error::CommandComplete
+                    );
+                });
+                
+            }
+            else
+            {
+                self.nvic.disable();
+                unsafe { 
+                    UART1_ISR_RX_LEN = 0;
                 }
-                else{
-                    let mut null_buf = [4; 0];
-                    uart_isr!(self, null_buf, rx_len);
-                }
+                self.nvic.enable();
+            }
+            events::clear_event_flag(EVENT_PRIORITY::UART1)
         }
-        // else assumed to be write
-        else {
+        // else assumed to be writeEND_OF_TRANSMISSION
+        else if (isr_status.read(Interrupts::TX) != 0) || (isr_status.read(Interrupts::END_OF_TRANSMISSION) != 0){
             self.transaction.take().map(|mut transaction| {
                 transaction.index += 1;
                 if transaction.index < transaction.length {
@@ -300,47 +388,7 @@ impl UART {
                     });
                 }
             });
-            
         }
-
-        // Clear interrupts
-        self.registers.icr.write(Interrupts::ALL_INTERRUPTS::Set);
-        self.nvic.clear_pending();
-        self.nvic.enable();
-    }
-
-    pub fn handle_event(&self) {
-        if let Some(mut buf) = self.rx_buf.take() {
-            let len;
-            self.nvic.disable();
-            unsafe { 
-                len = UART1_ISR_RX_LEN;
-                for i in 0..len {
-                    buf[i] = UART1_ISR_RX_BUF[i];
-                }
-                UART1_ISR_RX_LEN = 0;
-            }
-            self.nvic.enable();
-
-            self.client.map(move |client| {
-                client.receive_complete(
-                    buf,
-                    len,
-                    kernel::hil::uart::Error::CommandComplete
-                );
-            });
-            
-        }
-        else
-        {
-            self.nvic.disable();
-            unsafe { 
-                UART1_ISR_RX_LEN = 0;
-            }
-            self.nvic.enable();
-        }
-        events::clear_event_flag(EVENT_PRIORITY::UART1)
-
     }
 
     /// Transmits a single byte if the hardware is ready.
@@ -355,15 +403,6 @@ impl UART {
     }
 }
 
-use events::KernelEvent;
-impl KernelEvent for UART {
-    fn is_set(&self)-> bool {
-        self.nvic_event.get() 
-    }
-    fn dispatch(&self){
-        self.handle_interrupt();
-    }
-}
 
 impl kernel::hil::uart::UART for UART {
     fn set_client(&self, client: &'static kernel::hil::uart::Client) {
