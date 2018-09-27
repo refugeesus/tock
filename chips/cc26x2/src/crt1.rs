@@ -35,7 +35,6 @@ macro_rules! specific_isr {
         unsafe extern "C" fn $label() {
             switch_to_kernel_space!($label);
             $isr();
-            events::set_event_flag(events::EVENT_PRIORITY::UART1);
             clear_and_disable_nvic();
         }
     };

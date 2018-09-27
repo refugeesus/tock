@@ -50,8 +50,6 @@ impl<U: UART> Client for NextnodeUart<'a, U> {
     }
 
     fn receive_complete(&self, buffer: &'static mut [u8], rx_len: usize, error: uart::Error) {
-        debug!("Received! {:?}", rx_len);
-
         for n in 0..rx_len {
             debug_str!("{}", buffer[n] as char);
             for cntr in self.apps.iter() {

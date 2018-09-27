@@ -358,7 +358,8 @@ pub unsafe fn reset_handler() {
     );
     cc26x2::trng::TRNG.set_client(rng);
 
-    cc26x2::uart::UART1.enable_interrupts();
+
+    cc26x2::uart::UART1.initialize(&mut cc26x2::uart::UART1_ISR_RX_BUF);
     let nextnode_uart = static_init!(
         nextnode_uart::NextnodeUart<'static, cc26x2::uart::UART>,
         nextnode_uart::NextnodeUart::new(
@@ -366,7 +367,6 @@ pub unsafe fn reset_handler() {
             board_kernel.create_grant(&memory_allocation_capability)
         )
     );
-    cc26x2::uart::UART1.initialize(&mut cc26x2::uart::UART1_ISR_RX_BUF);
 
     kernel::hil::uart::UART::set_client(&cc26x2::uart::UART1, nextnode_uart);
     kernel::hil::uart::UART::receive(&cc26x2::uart::UART1, &mut cc26x2::uart::UART1_RX_BUF, 4);

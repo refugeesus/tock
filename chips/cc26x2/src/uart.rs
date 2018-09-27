@@ -131,31 +131,21 @@ macro_rules! uart_nvic {
                 events::set_event_flag($uart.event_priority);
 
                 // handle RX
-                //if (isr_status.read(Interrupts::RX) != 0) ||  (isr_status.read(Interrupts::RX_TIMEOUT) != 0){
-                        //loop {
-
+                if (isr_status.read(Interrupts::RX) != 0) ||  (isr_status.read(Interrupts::RX_TIMEOUT) != 0){
                         while $uart.registers.fr.read(Flags::RX_FIFO_EMPTY) == 0 {
-                             $uart.isr_buf.map( |buf| {
-                                let read_byte = $uart.registers.dr.get();
-                                let cur_byte = read_byte as u8;
+                            let read_byte = $uart.registers.dr.get();
+                            let cur_byte = read_byte as u8;
+                            $uart.isr_buf.map( |buf| {
                                 let index = $uart.isr_len.get();
                                 buf[index] = cur_byte;
                                 $uart.isr_len.set(index+1)
                             });
                         }
-
-                           
-
-                            // if $uart.registers.fr.read(Flags::RX_FIFO_EMPTY) != 0 {
-                            //     break;
-                            // }
-                            
-
                         //}
                     // clear these interrupt flags
-                    //$uart.registers.icr.write(Interrupts::RX.val(1));
-                    //$uart.registers.icr.write(Interrupts::RX_TIMEOUT.val(1));
-                //}
+                    $uart.registers.icr.write(Interrupts::RX.val(1));
+                    $uart.registers.icr.write(Interrupts::RX_TIMEOUT.val(1));
+                }
 
                 // get a copy of interrupt unhandled in NVIC
                 //let isr_suppress = !$uart.registers.mis.get();
@@ -165,7 +155,7 @@ macro_rules! uart_nvic {
                 //$uart.registers.imsc.set( imsc & !isr_suppress);
 
                 // Clear all interrupt flags
-                $uart.registers.icr.write(Interrupts::ALL_INTERRUPTS::Set);
+                //$uart.registers.icr.write(Interrupts::ALL_INTERRUPTS::Set);
                 // Clear NVIC
                 $uart.nvic.clear_pending();
             }
@@ -314,22 +304,20 @@ impl UART {
     pub fn handle_event(&self) {
         // get a copy of the masked interrupt status
         let isr_status = self.event_flags.extract();
-        // handle RX interrupt
-        if (isr_status.read(Interrupts::RX) != 0) ||  (isr_status.read(Interrupts::RX_TIMEOUT) != 0){
-            if let Some(mut buf) = self.rx_buf.take() {
-                debug!("Here we are! {:?}", self.event_priority);
 
-                let len: usize;
-                self.nvic.disable();
-                let len = self.isr_len.get();
-                unsafe { 
-                    self.isr_buf.map( |isr_buf| {
-                        for i in 0..len {
-                            buf[i] = isr_buf[i];
-                        }
-                    });
-                    self.isr_len.set(0);
-                }
+        // do we have ISR data to transmit?
+        self.nvic.disable();
+        let len = self.isr_len.get();
+        if len!= 0 {
+            if let Some(mut buf) = self.rx_buf.take() {
+
+                self.isr_buf.map( |isr_buf| {
+                    for i in 0..len {
+                        buf[i] = isr_buf[i];
+                    }
+                });
+                self.isr_len.set(0);
+
                 self.nvic.enable();
                 // allow interrupts to fire as client is called
                 self.client.map(move |client| {
@@ -343,13 +331,12 @@ impl UART {
             }
             else
             {
-                self.nvic.disable();
                 self.isr_len.set(0);
-                self.nvic.enable();
             }
         }
-        // else assumed to be write
-        //else{
+        self.nvic.enable();
+
+
         self.transaction.take().map(|mut transaction| {
             transaction.index += 1;
             if transaction.index < transaction.length {
