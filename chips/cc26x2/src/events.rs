@@ -1,33 +1,63 @@
-use kernel::common::cells::VolatileCell;
 
-pub struct KernelEvent<'a, T:'a> {
-    state: VolatileCell<usize>,
-    me: &'a T,
-    handler: fn(&'a T, usize)
+pub static mut EVENTS: u64 = 0;
+
+use cortexm4::nvic;
+use cortexm::support::{atomic_read, atomic_write};
+
+enum_from_primitive!{
+#[derive(Debug, PartialEq)]
+pub enum EVENT_PRIORITY {
+    GPIO = 0,
+    UART0 = 1,
+    UART1 = 2,
+    AON_RTC = 3,
+    RTC = 4,
+    I2C0 = 6,
+    AON_PROG = 7,
+}
 }
 
-impl <'a, T>KernelEvent<'a, T>{
-    pub fn new( me: &'a T, f: fn(&'a T, usize) ) -> KernelEvent<'a, T> {
-        KernelEvent {
-            state: VolatileCell::new(0),
-            me,
-            handler:f
-            // option NVIC
+pub unsafe fn next_pending() -> Option<EVENT_PRIORITY> {
+    let mut event_flags;
+    unsafe {  
+        event_flags = atomic_read(&EVENTS);
+    }
+
+    let mut count = 0;
+    // stay in loop until we found the flag
+    while event_flags!=0 {
+        // if flag is found, return the count
+        if (event_flags & 0b1) != 0 {
+            return Some( EVENT_PRIORITY::from_u8(count)
+                .expect("Unmapped EVENT_PRIORITY"));
         }
+        // otherwise increment
+        count += 1;
+        event_flags >>= 1;
     }
+    None
+}
 
-    fn is_set(&self)-> bool {
-        self.state.get()!=0
-    }
+pub fn set_event_flag(priority: EVENT_PRIORITY) {
+    //assert!(priority < 64);
+    unsafe { 
+        let mut val = atomic_read(&EVENTS);
+        val |= (0b1 << (priority as u8) as u64);
+        atomic_write(&mut EVENTS, val);
+    };
+}
 
-    fn dispatch(&self) {
-        (self.handler)(self.me, self.state.get());
-    }
+pub fn clear_event_flag(priority: EVENT_PRIORITY) {
+    unsafe { 
+        let mut val = atomic_read(&EVENTS);
+        val &= !(0b1 << (priority as u8) as u64);
+        atomic_write(&mut EVENTS, val);
+ };
+}
 
-    fn clear(&mut self) {
-        //check for NVIC
-        self.state.set(0);
-    }
+pub trait KernelEvent: Sized {
+    fn is_set(&self) -> bool;
+    fn dispatch(&self);
 }
 
 use num_traits::FromPrimitive;
@@ -71,4 +101,3 @@ pub enum NVIC_IRQ {
     UART1 = 36
 }
 }
-

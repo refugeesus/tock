@@ -1,8 +1,11 @@
-#![feature(const_fn, untagged_unions, used)]
+#![feature(const_fn, untagged_unions, used, asm, core_intrinsics, naked_functions)]
 #![no_std]
 #![crate_name = "cc26x2"]
 #![crate_type = "rlib"]
+
+#[macro_use]
 extern crate cortexm4;
+extern crate cortexm;
 #[allow(unused_imports)]
 #[macro_use]
 extern crate kernel;

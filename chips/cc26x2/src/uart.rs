@@ -102,7 +102,7 @@ const UART1_BASE: StaticRef<UartRegisters> =
 
 use cortexm4::nvic;
 use events;
-
+use events::EVENT_PRIORITY;
 
 pub static UART0_NVIC: nvic::Nvic = unsafe { nvic::Nvic::new(events::NVIC_IRQ::UART0 as u32) };
 pub static UART1_NVIC: nvic::Nvic = unsafe { nvic::Nvic::new(events::NVIC_IRQ::UART1 as u32) };
@@ -112,7 +112,6 @@ pub static mut UART1_RX_BUF: [u8; 4] = [0; 4];
 
 pub static mut UART0: UART = UART::new(&UART0_BASE, &UART0_NVIC);
 pub static mut UART1: UART = UART::new(&UART1_BASE, &UART1_NVIC);
-
 pub static mut UART1_ISR_RX_BUF: [u8; 4] = [0; 4];
 pub static mut UART1_ISR_RX_LEN: usize = 0;
 
@@ -137,73 +136,15 @@ macro_rules! uart_isr {
     }
 }
 
-// macro_rules! event_handler {
-//     ($fn: tt, $uart:ident) => {
-//     // clears all interrupts related to UART.
-//     pub fn $fn() {
-//         // get a copy of the masked interrupt status
-//         let isr_status = $uart.registers.mis.extract();
-
-//         // handle RX interrupt
-//         if (isr_status.read(Interrupts::RX) != 0) ||  (isr_status.read(Interrupts::RX_TIMEOUT) != 0){
-//                 let mut rx_buf = $uart.rx_buf.take();
-//                 let mut rx_len = 0;
-
-//                 if let Some(mut buf) = rx_buf {
-//                     uart_isr!($uart, buf, rx_len);
-//                     $uart.client.map(move |client| {
-//                         client.receive_complete(
-//                             buf,
-//                             rx_len,
-//                             kernel::hil::uart::Error::CommandComplete
-//                         );
-//                     });
-//                 }
-//                 else{
-//                     let mut null_buf = [4; 0];
-//                     uart_isr!($uart, null_buf, rx_len);
-//                 }
-//         }
-//         // else assumed to be write
-//         else {
-//             $uart.transaction.take().map(|mut transaction| {
-//                 transaction.index += 1;
-//                 if transaction.index < transaction.length {
-//                     $uart.send_byte(transaction.buffer[transaction.index]);
-//                     $uart.transaction.put(transaction);
-//                 } else {
-//                     $uart.client.map(move |client| {
-//                         client.transmit_complete(
-//                             transaction.buffer,
-//                             kernel::hil::uart::Error::CommandComplete,
-//                         );
-//                     });
-//                 }
-//             });
-            
-//         }
-
-//         // Clear interrupts
-//         $uart.registers.icr.write(Interrupts::ALL_INTERRUPTS::Set);
-//     }
-//     }
-// }
-
-// event_handler!(uart0_handler, UART0);
-// event_handler!(uart1_hanlder, UART1);
-
-
-
-
 use cortexm4::switch_to_kernel_space;
 
 // handle RX interrupt
 pub extern "C" fn uart1_isr() {
     unsafe { 
-        switch_to_kernel_space();
         uart_isr!(UART1, UART1_ISR_RX_BUF, UART1_ISR_RX_LEN);
         UART1.nvic.clear_pending();
-        UART1.nvic_event.set(true) 
+        UART1.registers.icr.write(Interrupts::ALL_INTERRUPTS::Set);
+        events::set_event_flag(EVENT_PRIORITY::UART1)
    };
 }
 
@@ -226,7 +167,7 @@ pub struct UART {
     transaction: MapCell<Transaction>,
     rx_buf: MapCell<&'static mut [u8]>,
     pub nvic: &'static nvic::Nvic,
-    pub nvic_event: VolatileCell<bool>
+    pub nvic_event: VolatileCell<bool>,
 }
 
 impl UART {
@@ -237,7 +178,7 @@ impl UART {
             transaction: MapCell::empty(),
             rx_buf: MapCell::empty(),
             nvic: nvic,
-            nvic_event: VolatileCell::new(false)
+            nvic_event: VolatileCell::new(false),
         }
     }
 
@@ -319,7 +260,7 @@ impl UART {
     }
 
     // clears all interrupts related to UART.
-    pub fn handle_interrupt(&self, state: usize) {
+    pub fn handle_interrupt(&self) {
         // get a copy of the masked interrupt status
         let isr_status = self.registers.mis.extract();
 
@@ -364,12 +305,14 @@ impl UART {
 
         // Clear interrupts
         self.registers.icr.write(Interrupts::ALL_INTERRUPTS::Set);
+        self.nvic.clear_pending();
+        self.nvic.enable();
     }
 
     pub fn handle_event(&self) {
-
         if let Some(mut buf) = self.rx_buf.take() {
             let len;
+            self.nvic.disable();
             unsafe { 
                 len = UART1_ISR_RX_LEN;
                 for i in 0..len {
@@ -386,9 +329,18 @@ impl UART {
                     kernel::hil::uart::Error::CommandComplete
                 );
             });
-
             
         }
+        else
+        {
+            self.nvic.disable();
+            unsafe { 
+                UART1_ISR_RX_LEN = 0;
+            }
+            self.nvic.enable();
+        }
+        events::clear_event_flag(EVENT_PRIORITY::UART1)
+
     }
 
     /// Transmits a single byte if the hardware is ready.
@@ -400,6 +352,16 @@ impl UART {
     /// Checks if there is space in the transmit fifo queue.
     pub fn tx_ready(&self) -> bool {
         !self.registers.fr.is_set(Flags::TX_FIFO_FULL)
+    }
+}
+
+use events::KernelEvent;
+impl KernelEvent for UART {
+    fn is_set(&self)-> bool {
+        self.nvic_event.get() 
+    }
+    fn dispatch(&self){
+        self.handle_interrupt();
     }
 }
 

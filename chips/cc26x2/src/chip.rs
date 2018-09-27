@@ -25,6 +25,10 @@ impl Cc26X2 {
     }
 }
 
+
+use events::EVENT_PRIORITY;
+use events::NVIC_IRQ;
+
 impl kernel::Chip for Cc26X2 {
     type MPU = cortexm4::mpu::MPU;
     type SysTick = cortexm4::systick::SysTick;
@@ -37,44 +41,46 @@ impl kernel::Chip for Cc26X2 {
         &self.systick
     }
     fn service_pending_interrupts(&mut self) {
-        unsafe {
-            while let Some(interrupt) = nvic::next_pending() {
+    unsafe {
 
-                let parse_nvic = events::NVIC_IRQ::from_u32(interrupt);
+        while let Some(interrupt) = nvic::next_pending() {
+            let parse_nvic = events::NVIC_IRQ::from_u32(interrupt);
 
-                if let Some(event) = parse_nvic {
-                    match event {
-                    events::NVIC_IRQ::GPIO => gpio::PORT.handle_interrupt(1),
-                    events::NVIC_IRQ::AON_RTC => rtc::RTC.handle_interrupt(),
-                    events::NVIC_IRQ::UART0 => uart::UART0.handle_interrupt(1),
-                    events::NVIC_IRQ::UART1 => uart::UART1.handle_interrupt(1),
-                    events::NVIC_IRQ::I2C => i2c::I2C0.handle_interrupt(),
+            if let Some(event) = parse_nvic {
+                match event {
+                    NVIC_IRQ::GPIO => gpio::PORT.handle_interrupt(),
+                    NVIC_IRQ::AON_RTC => rtc::RTC.handle_interrupt(),
+                    NVIC_IRQ::UART0 => uart::UART0.handle_interrupt(),
+                    //NVIC_IRQ::UART1 => uart::UART1.handle_interrupt(),
+                    NVIC_IRQ::I2C => i2c::I2C0.handle_interrupt(),
                     // AON Programmable interrupt
                     // We need to ignore JTAG events since some debuggers emit these
-                    events::NVIC_IRQ::AON_PROG => (),
+                    NVIC_IRQ::AON_PROG => (),
                     _ => panic!("unhandled interrupt {}", interrupt),
-                    }
-                    let n = nvic::Nvic::new(interrupt);
-                    n.clear_pending();
-                    n.enable();
                 }
-                else{
-                    panic!("Undefined NVIC_IRQ")
+            }
+            let n = nvic::Nvic::new(interrupt);
+            n.clear_pending();
+            n.enable();
+        }
+
+
+        while let Some(event) = events::next_pending() {
+            match event {
+                    EVENT_PRIORITY::UART1 => {
+                        uart::UART1.handle_event()
+                    },
+                     _ => panic!("unhandled event {:?} ", event),
+                    // EVENT_PRIORITY::GPIO  => gpio::PORT.handle_interrupt(),
+                    // EVENT_PRIORITY::RTC   => rtc::RTC.handle_interrupt(),
+                    // EVENT_PRIORITY::AON_RTC => rtc::RTC.handle_interrupt(),
+                    // EVENT_PRIORITY::UART0 => uart::UART0.handle_interrupt(),
+
+                    // EVENT_PRIORITY::I2C0 => i2c::I2C0.handle_interrupt(),
+                    // EVENT_PRIORITY::AON_PROG => (),
                 }
-                
             }
         }
-
-        unsafe {
-            uart::UART1.nvic.disable();
-            if uart::UART1.nvic_event.get() { 
-                uart::UART1.handle_event();
-                uart::UART1.nvic_event.set(false) ;
-            };
-            uart::UART1.nvic.enable();
-        }
-
-
     }
 
     fn has_pending_interrupts(&self) -> bool {
