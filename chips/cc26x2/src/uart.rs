@@ -110,8 +110,8 @@ pub static UART1_NVIC: nvic::Nvic = unsafe { nvic::Nvic::new(events::NVIC_IRQ::U
 pub static mut UART0_RX_BUF: [u8; 4] = [0; 4];
 pub static mut UART1_RX_BUF: [u8; 4] = [0; 4];
 
-pub static mut UART0: UART = UART::new(&UART0_BASE, &UART0_NVIC);
-pub static mut UART1: UART = UART::new(&UART1_BASE, &UART1_NVIC);
+pub static mut UART0: UART = unsafe { UART::new(&UART0_BASE, &UART0_NVIC, &UART0_EVENT_FLAGS) };
+pub static mut UART1: UART = unsafe { UART::new(&UART1_BASE, &UART1_NVIC, &UART1_EVENT_FLAGS) };
 
 static mut UART1_ISR_RX_BUF: [u8; 4] = [0; 4];
 static mut UART1_ISR_RX_LEN: usize = 0;
@@ -124,7 +124,7 @@ static mut UART1_EVENT_FLAGS: ReadWrite<u32, Interrupts::Register> = ReadWrite::
 
 
 macro_rules! uart_nvic {
-    ($fn_name:tt, $uart:ident, $buf:ident, $len:ident, $event_flags:ident) => {
+    ($fn_name:tt, $uart:ident, $buf:ident, $len:ident) => {
         // handle RX interrupt
         pub extern "C" fn $fn_name() {
             unsafe {
@@ -133,9 +133,9 @@ macro_rules! uart_nvic {
                 let isr_status = $uart.registers.mis.extract();
 
                 // provide copy of flags of kernel-space handling
-                $event_flags.set(isr_status.get());
+                $uart.event_flags.set(isr_status.get());
                 // signal to kernel-space that there is an event
-                events::set_event_flag(EVENT_PRIORITY::UART1);
+                events::set_event_flag(EVENT_PRIORITY::$uart);
 
                 // handle RX
                 if (isr_status.read(Interrupts::RX) != 0) ||  (isr_status.read(Interrupts::RX_TIMEOUT) != 0){
@@ -171,8 +171,8 @@ macro_rules! uart_nvic {
     }
 }
 
-uart_nvic!(uart0_isr, UART0, UART0_ISR_RX_BUF, UART0_ISR_RX_LEN, UART0_EVENT_FLAGS);
-uart_nvic!(uart1_isr, UART1, UART1_ISR_RX_BUF, UART1_ISR_RX_LEN, UART1_EVENT_FLAGS);
+uart_nvic!(uart0_isr, UART0, UART0_ISR_RX_BUF, UART0_ISR_RX_LEN);
+uart_nvic!(uart1_isr, UART1, UART1_ISR_RX_BUF, UART1_ISR_RX_LEN);
 
 
 /// Stores an ongoing TX transaction
@@ -195,10 +195,11 @@ pub struct UART {
     rx_buf: MapCell<&'static mut [u8]>,
     pub nvic: &'static nvic::Nvic,
     pub nvic_event: VolatileCell<bool>,
+    event_flags: &'static ReadWrite<u32, Interrupts::Register>
 }
 
 impl UART {
-    const fn new(base_reg: &'static StaticRef<UartRegisters>, nvic: &'static nvic::Nvic) -> UART {
+    const fn new(base_reg: &'static StaticRef<UartRegisters>, nvic: &'static nvic::Nvic, event_priority: EVENT_PRIORITY, event_flags: &'static ReadWrite<u32, Interrupts::Register>) -> UART {
         UART {
             registers: base_reg,
             client: OptionalCell::empty(),
@@ -206,6 +207,8 @@ impl UART {
             rx_buf: MapCell::empty(),
             nvic: nvic,
             nvic_event: VolatileCell::new(false),
+            event_priority,
+            event_flags,
         }
     }
 
@@ -370,10 +373,9 @@ impl UART {
                 }
                 self.nvic.enable();
             }
-            events::clear_event_flag(EVENT_PRIORITY::UART1)
         }
-        // else assumed to be writeEND_OF_TRANSMISSION
-        else if (isr_status.read(Interrupts::TX) != 0) || (isr_status.read(Interrupts::END_OF_TRANSMISSION) != 0){
+        // else assumed to be write
+        else{
             self.transaction.take().map(|mut transaction| {
                 transaction.index += 1;
                 if transaction.index < transaction.length {
@@ -389,6 +391,10 @@ impl UART {
                 }
             });
         }
+
+
+        events::clear_event_flag(EVENT_PRIORITY::UART1);
+        self.enable_interrupts();
     }
 
     /// Transmits a single byte if the hardware is ready.
