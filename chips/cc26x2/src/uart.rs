@@ -125,38 +125,35 @@ macro_rules! uart_nvic {
                 // get a copy of the masked interrupt status
                 let isr_status = $uart.registers.mis.extract();
 
-                // provide copy of flags of kernel-space handling
-                $uart.event_flags.set(isr_status.get());
                 // signal to kernel-space that there is an event
                 events::set_event_flag($uart.event_priority);
 
                 // handle RX
-                if (isr_status.read(Interrupts::RX) != 0) ||  (isr_status.read(Interrupts::RX_TIMEOUT) != 0){
-                        while $uart.registers.fr.read(Flags::RX_FIFO_EMPTY) == 0 {
-                            let read_byte = $uart.registers.dr.get();
-                            let cur_byte = read_byte as u8;
-                            $uart.isr_buf.map( |buf| {
-                                let index = $uart.isr_len.get();
-                                buf[index] = cur_byte;
-                                $uart.isr_len.set(index+1)
-                            });
-                        }
-                        //}
-                    // clear these interrupt flags
-                    $uart.registers.icr.write(Interrupts::RX.val(1));
-                    $uart.registers.icr.write(Interrupts::RX_TIMEOUT.val(1));
+                if (isr_status.read(Interrupts::RX_TIMEOUT) != 0) || (isr_status.read(Interrupts::RX) != 0) {
+                    while $uart.rx_fifo_not_empty() {
+                        let byte = $uart.read_byte();
+                        $uart.isr_buf.map( |buf| {
+                            let index = $uart.isr_len.get();
+                            buf[index] = byte;
+                            $uart.isr_len.set(index+1)
+                        });
+                    }
                 }
 
-                // get a copy of interrupt unhandled in NVIC
-                //let isr_suppress = !$uart.registers.mis.get();
-                // get current interrupt mask
-                //let imsc = $uart.registers.imsc.get();
-                // remove unhandled interrupt from interrupt mask
-                //$uart.registers.imsc.set( imsc & !isr_suppress);
+                if (isr_status.read(Interrupts::END_OF_TRANSMISSION) != 0) {
+                    $uart.transaction.map( |mut transaction| {
 
-                // Clear all interrupt flags
-                //$uart.registers.icr.write(Interrupts::ALL_INTERRUPTS::Set);
-                // Clear NVIC
+                        while 
+                        $uart.tx_fifo_not_full()
+                         &&
+                        transaction.index < transaction.length
+                        {
+                            $uart.send_byte(transaction.buffer[transaction.index]);
+                            transaction.index += 1;
+                        }
+                    });
+                }
+                $uart.registers.icr.write(Interrupts::ALL_INTERRUPTS::Set);
                 $uart.nvic.clear_pending();
             }
         }
@@ -294,7 +291,9 @@ impl UART {
         // clear all
         self.registers.icr.write(Interrupts::ALL_INTERRUPTS::Clear);
         // set all interrupts
-        self.registers.imsc.modify(Interrupts::ALL_INTERRUPTS::Set);
+        self.registers.imsc.modify(Interrupts::RX.val(1));
+        self.registers.imsc.modify(Interrupts::RX_TIMEOUT.val(1));
+        self.registers.imsc.modify(Interrupts::END_OF_TRANSMISSION.val(1));
     }
 
     pub fn handle_interrupt(&self) {
@@ -305,7 +304,7 @@ impl UART {
         // get a copy of the masked interrupt status
         let isr_status = self.event_flags.extract();
 
-        // do we have ISR data to transmit?
+        // do we have ISR data collected?
         self.nvic.disable();
         let len = self.isr_len.get();
         if len!= 0 {
@@ -317,8 +316,8 @@ impl UART {
                     }
                 });
                 self.isr_len.set(0);
-
                 self.nvic.enable();
+
                 // allow interrupts to fire as client is called
                 self.client.map(move |client| {
                     client.receive_complete(
@@ -336,13 +335,8 @@ impl UART {
         }
         self.nvic.enable();
 
-
         self.transaction.take().map(|mut transaction| {
-            transaction.index += 1;
-            if transaction.index < transaction.length {
-                self.send_byte(transaction.buffer[transaction.index]);
-                self.transaction.put(transaction);
-            } else {
+            if transaction.index >= transaction.length {
                 self.client.map(move |client| {
                     client.transmit_complete(
                         transaction.buffer,
@@ -350,24 +344,36 @@ impl UART {
                     );
                 });
             }
+            else{
+                self.transaction.put(transaction);
+            }
         });
-        //}
-        self.event_flags.set(0);
         events::clear_event_flag(self.event_priority);
-        self.nvic.clear_pending();
-        self.nvic.enable();
-        self.registers.icr.write(Interrupts::ALL_INTERRUPTS::Set);
         self.enable_interrupts();
     }
 
-    /// Transmits a single byte if the hardware is ready.
+    // Pushes a byte into the TX FIFO.
+    #[inline]
     pub fn send_byte(&self, c: u8) {
         // Put byte in data register
         self.registers.dr.set(c as u32);
     }
 
+    // Pulls a byte into the RX FIFO.
+    #[inline]
+    pub fn read_byte(&self) -> u8 {
+        self.registers.dr.get() as u8
+    }
+
     /// Checks if there is space in the transmit fifo queue.
-    pub fn tx_ready(&self) -> bool {
+    #[inline]
+    pub fn rx_fifo_not_empty(&self) -> bool {
+        !self.registers.fr.is_set(Flags::RX_FIFO_EMPTY)
+    }
+
+    /// Checks if there is space in the transmit fifo queue.
+    #[inline]
+    pub fn tx_fifo_not_full(&self) -> bool {
         !self.registers.fr.is_set(Flags::TX_FIFO_FULL)
     }
 }
@@ -383,15 +389,43 @@ impl kernel::hil::uart::UART for UART {
     }
 
     fn transmit(&self, tx_data: &'static mut [u8], tx_len: usize) {
-        if tx_len > 0 && tx_data.len() > 0 {
-            self.send_byte(tx_data[0]);
-        }
+        // if there is a weird input event, handle it
+        if tx_len == 0 || tx_len > tx_data.len() {
+            
+            let error;
+            
+            if tx_len == 0 {
+                error =  kernel::hil::uart::Error::CommandComplete
+            } else {
+                error = kernel::hil::uart::Error::TxLenLargerThanBuffer
+            }
+            
+            self.client.map(move |client| {
+                client.transmit_complete(
+                    tx_data,
+                    error
+                );
+            });
 
-        self.transaction.put(Transaction {
-            buffer: tx_data,
-            length: tx_len,
-            index: 0,
-        });
+        // otherwise kick off the transfer
+        } else {
+
+            let mut index = 0;
+            // we will send at least one byte, causing EOT interrupt
+            while index < tx_len && self.tx_fifo_not_full() {
+                self.send_byte(tx_data[index]);
+                index += 1;
+            }
+
+            // EOT interrupt will cause this to be hanled in event_handler
+            self.transaction.put(Transaction {
+                buffer: tx_data,
+                length: tx_len,
+                index: index,
+            });
+        }
+        
+        
     }
 
     #[allow(unused)]

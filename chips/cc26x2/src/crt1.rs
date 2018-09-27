@@ -35,20 +35,12 @@ macro_rules! specific_isr {
         unsafe extern "C" fn $label() {
             switch_to_kernel_space!($label);
             $isr();
-            clear_and_disable_nvic();
         }
     };
 }
 use events;
-//specific_isr!(uart0_nvic, uart0_isr, EVENT_PRIORITY::UART0);
+specific_isr!(uart0_nvic, uart0_isr);
 specific_isr!(uart1_nvic, uart1_isr);
-
-unsafe extern "C" fn uart0_nvic() {
-    switch_to_kernel_space!(uart0);
-    events::set_event_flag(events::EVENT_PRIORITY::UART0);
-    clear_and_disable_nvic();
-}
-
 
 #[link_section = ".vectors"]
 // used Ensures that the symbol is kept until the final binary
