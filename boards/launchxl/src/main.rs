@@ -15,7 +15,6 @@ use capsules::nextnode_uart;
 use capsules::virtual_uart::{UartDevice, UartMux};
 use cc26x2::aon;
 use cc26x2::prcm;
-use cc26x2::events::KernelEvent;
 
 use kernel::capabilities;
 use kernel::hil;

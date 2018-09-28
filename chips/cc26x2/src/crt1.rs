@@ -4,7 +4,7 @@ use cortexm4::{
     svc_handler, 
     systick_handler, 
     hard_fault_handler, 
-    clear_and_disable_nvic
+    // clear_and_disable_nvic
 };
 
 
@@ -38,7 +38,7 @@ macro_rules! specific_isr {
         }
     };
 }
-use events;
+
 specific_isr!(uart0_nvic, uart0_isr);
 specific_isr!(uart1_nvic, uart1_isr);
 

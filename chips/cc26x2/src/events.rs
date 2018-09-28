@@ -52,11 +52,6 @@ pub fn clear_event_flag(priority: EVENT_PRIORITY) {
  };
 }
 
-pub trait KernelEvent: Sized {
-    fn is_set(&self) -> bool;
-    fn dispatch(&self);
-}
-
 use num_traits::FromPrimitive;
 
 enum_from_primitive!{

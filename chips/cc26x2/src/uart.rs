@@ -140,8 +140,8 @@ macro_rules! uart_nvic {
                     }
                 }
 
-                if (isr_status.read(Interrupts::END_OF_TRANSMISSION) != 0) {
-                    $uart.transaction.map( |mut transaction| {
+                if isr_status.read(Interrupts::END_OF_TRANSMISSION) != 0 {
+                    $uart.transaction.map( |transaction| {
 
                         while 
                         $uart.tx_fifo_not_full()
@@ -189,7 +189,6 @@ pub struct UART {
     pub nvic: &'static nvic::Nvic,
     pub nvic_event: VolatileCell<bool>,
     event_priority: EVENT_PRIORITY,
-    event_flags: ReadWrite<u32, Interrupts::Register>,
     isr_buf: MapCell<&'static mut [u8]>,
     isr_len: VolatileCell<usize>,
 }
@@ -208,7 +207,6 @@ impl UART {
             nvic: nvic,
             nvic_event: VolatileCell::new(false),
             event_priority,
-            event_flags: ReadWrite::new(0),
             isr_buf: MapCell::empty(),
             isr_len: VolatileCell::new(0),
 
@@ -301,8 +299,6 @@ impl UART {
     } 
 
     pub fn handle_event(&self) {
-        // get a copy of the masked interrupt status
-        let isr_status = self.event_flags.extract();
 
         // do we have ISR data collected?
         self.nvic.disable();
@@ -335,7 +331,7 @@ impl UART {
         }
         self.nvic.enable();
 
-        self.transaction.take().map(|mut transaction| {
+        self.transaction.take().map(|transaction| {
             if transaction.index >= transaction.length {
                 self.client.map(move |client| {
                     client.transmit_complete(

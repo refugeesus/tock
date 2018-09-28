@@ -88,7 +88,6 @@ macro_rules! switch_to_kernel_space{
   }
 }
 
-#[macro_export]
 #[cfg(target_os = "none")]
 pub unsafe extern "C" fn clear_and_disable_nvic() {
       asm!(
